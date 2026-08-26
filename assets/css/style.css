@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap');
+
+:root {
+  --navy: #0d1f3c;
+  --navy-mid: #1a3a5c;
+  --navy-light: #234d7a;
+  --red: #8b0000;
+  --gold: #c9a84c;
+  --bg: #060f1e;
+  --green: #4ade80;
+  --amber: #c9a84c;
+  --rederr: #f87171;
+  --card-bg: #0f2444;
+  --border-color: #1e3e68;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg);
+  color: #f1f5f9;
+  min-height: 100vh;
+}
+
+.font-serif-ufc {
+  font-family: 'Merriweather', Georgia, serif;
+}
+
+.bg-ufc-navy { background-color: var(--navy); }
+.bg-ufc-navy-mid { background-color: var(--navy-mid); }
+.bg-ufc-navy-light { background-color: var(--navy-light); }
+.bg-ufc-card { background-color: var(--card-bg); }
+.bg-ufc-bg { background-color: var(--bg); }
+.border-ufc { border-color: var(--border-color); }
+.text-ufc-gold { color: var(--gold); }
+.text-ufc-green { color: var(--green); }
+.text-ufc-amber { color: var(--amber); }
+.text-ufc-red { color: var(--rederr); }
+.bg-ufc-gold { background-color: var(--gold); }
+.bg-ufc-red { background-color: var(--red); }
+
+.btn-primary {
+  background-color: var(--gold);
+  color: #060f1e;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+}
+.btn-primary:hover {
+  background-color: #d6b85e;
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.25);
+}
+
+.btn-secondary {
+  background-color: var(--navy-mid);
+  color: #e2e8f0;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease-in-out;
+}
+.btn-secondary:hover {
+  background-color: var(--navy-light);
+  border-color: #3b82f6;
+}
+
+.badge-green {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.badge-amber {
+  background-color: rgba(201, 168, 76, 0.15);
+  color: #c9a84c;
+  border: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+.badge-red {
+  background-color: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.badge-neutral {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* Print Specific Layout */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-card {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+  }
+}
