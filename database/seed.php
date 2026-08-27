@@ -1,7 +1,7 @@
 <?php
 /**
  * United Five Construction, Inc.
- * Database Seeder - All 4 Phases & 37 Questions authoritative specification
+ * Database Seeder — All 4 Phases, 37 Questions, and Tiers (authoritative specification)
  */
 
 require_once __DIR__ . '/../config/database.php';
@@ -16,7 +16,22 @@ try {
     $pdo->exec($schemaSql);
     echo "-> Schema initialized successfully.\n";
 
-    // 2. Seed Users
+    // 2. Seed Tiers
+    $stmtTier = $pdo->prepare(
+        "INSERT INTO `tiers` (`name`, `description`, `color`, `sort_order`) VALUES (?, ?, ?, ?)"
+    );
+    $tiers = [
+        ['Tier 1 — Strategic / Full-Scope',   'Large, complex, multi-phase projects requiring full UFC engagement.',    '#c9a84c', 1],
+        ['Tier 2 — Mid-Market / Standard',    'Standard commercial or residential projects with typical complexity.',   '#3b82f6', 2],
+        ['Tier 3 — Small / Streamlined',      'Smaller, well-defined scopes with limited assessment overhead.',         '#4ade80', 3],
+        ['Tier 4 — Legacy / Non-Standard',    'Projects outside normal criteria — requires CEO review.',                '#f87171', 4],
+    ];
+    foreach ($tiers as $t) {
+        $stmtTier->execute($t);
+    }
+    echo "-> Seeded 4 Deal Tiers.\n";
+
+    // 3. Seed Users
     $stmtUser = $pdo->prepare("INSERT INTO `users` (`name`, `email`, `password_hash`, `role`) VALUES (?, ?, ?, ?)");
     $users = [
         ['Admin User', 'admin@ufc.com', password_hash('admin123', PASSWORD_DEFAULT), 'admin'],
@@ -28,7 +43,7 @@ try {
     }
     echo "-> Seeded default users (admin@ufc.com, assessor@ufc.com, ceo@ufc.com).\n";
 
-    // 3. Seed Phases
+    // 4. Seed Phases
     $stmtPhase = $pdo->prepare("INSERT INTO `phases` (`phase_number`, `title`, `the_question`, `unlocks_when`, `question_count`, `description`) VALUES (?, ?, ?, ?, ?, ?)");
     $phases = [
         [
@@ -72,7 +87,7 @@ try {
     }
     echo "-> Seeded 4 Phases.\n";
 
-    // 4. Seed Questions & Options
+    // 5. Seed Questions & Options
     $stmtQ = $pdo->prepare("INSERT INTO `questions` (`phase_id`, `question_number`, `question_text`, `response_type`, `owner`, `visibility`, `trigger_type`, `client_message`, `evidence_required`, `display_condition`, `order_index`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmtOpt = $pdo->prepare("INSERT INTO `question_options` (`question_id`, `option_key`, `option_label`, `branch_action`, `target_question_number`, `score_weight`, `order_index`) VALUES (?, ?, ?, ?, ?, ?, ?)");
 

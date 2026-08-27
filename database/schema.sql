@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS `assessments`;
 DROP TABLE IF EXISTS `question_options`;
 DROP TABLE IF EXISTS `questions`;
 DROP TABLE IF EXISTS `phases`;
+DROP TABLE IF EXISTS `tiers`;
 DROP TABLE IF EXISTS `users`;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -29,7 +30,17 @@ CREATE TABLE `users` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Phases Table
+-- 2. Tiers Table
+CREATE TABLE `tiers` (
+    `id`          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name`        VARCHAR(100) NOT NULL,
+    `description` TEXT         DEFAULT NULL,
+    `color`       VARCHAR(30)  DEFAULT '#c9a84c',
+    `sort_order`  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `created_at`  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Phases Table
 CREATE TABLE `phases` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `phase_number` TINYINT UNSIGNED NOT NULL UNIQUE,
@@ -72,31 +83,34 @@ CREATE TABLE `question_options` (
     FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Assessments Table
+-- 6. Assessments Table
 CREATE TABLE `assessments` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `assessment_number` VARCHAR(30) NOT NULL UNIQUE,
-    `client_name` VARCHAR(150) NOT NULL,
-    `client_email` VARCHAR(150) NOT NULL,
-    `client_phone` VARCHAR(50) DEFAULT NULL,
-    `project_address` TEXT NOT NULL,
-    `project_type` VARCHAR(100) DEFAULT NULL,
-    `estimated_budget` DECIMAL(14,2) DEFAULT NULL,
-    `assessor_id` INT UNSIGNED NOT NULL,
-    `current_phase` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `status` ENUM('IN_PROGRESS', 'HOLD', 'ESCALATED', 'PROCEED_TO_PROPOSAL', 'NOT_A_FIT') NOT NULL DEFAULT 'IN_PROGRESS',
-    `decline_reason` ENUM('STOP_TRIGGER', 'UFC_CAPACITY', 'UNRESPONSIVE', 'OTHER') DEFAULT NULL,
-    `decline_notes` TEXT DEFAULT NULL,
-    `hold_deadline_date` DATE DEFAULT NULL,
-    `requirements_letter_generated_at` DATETIME DEFAULT NULL,
-    `decline_letter_generated_at` DATETIME DEFAULT NULL,
-    `completed_at` DATETIME DEFAULT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`assessor_id`) REFERENCES `users` (`id`)
+    `id`                               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `assessment_number`                VARCHAR(30)   NOT NULL UNIQUE,
+    `client_name`                      VARCHAR(150)  NOT NULL,
+    `client_email`                     VARCHAR(150)  NOT NULL,
+    `client_phone`                     VARCHAR(50)   DEFAULT NULL,
+    `project_name`                     VARCHAR(255)  DEFAULT NULL UNIQUE,
+    `tier_id`                          INT UNSIGNED  DEFAULT NULL,
+    `project_address`                  TEXT          NOT NULL DEFAULT '',
+    `project_type`                     VARCHAR(100)  DEFAULT NULL,
+    `estimated_budget`                 DECIMAL(14,2) DEFAULT NULL,
+    `assessor_id`                      INT UNSIGNED  NOT NULL,
+    `current_phase`                    TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `status`                           ENUM('IN_PROGRESS','HOLD','ESCALATED','PROCEED_TO_PROPOSAL','NOT_A_FIT') NOT NULL DEFAULT 'IN_PROGRESS',
+    `decline_reason`                   ENUM('STOP_TRIGGER','UFC_CAPACITY','UNRESPONSIVE','OTHER') DEFAULT NULL,
+    `decline_notes`                    TEXT          DEFAULT NULL,
+    `hold_deadline_date`               DATE          DEFAULT NULL,
+    `requirements_letter_generated_at` DATETIME      DEFAULT NULL,
+    `decline_letter_generated_at`      DATETIME      DEFAULT NULL,
+    `completed_at`                     DATETIME      DEFAULT NULL,
+    `created_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`assessor_id`) REFERENCES `users` (`id`),
+    FOREIGN KEY (`tier_id`)    REFERENCES `tiers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. Assessment Answers Table
+-- 7. Assessment Answers Table
 CREATE TABLE `assessment_answers` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -116,7 +130,7 @@ CREATE TABLE `assessment_answers` (
     FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Explain Blocks Table
+-- 8. Explain Blocks Table
 CREATE TABLE `explain_blocks` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -131,7 +145,7 @@ CREATE TABLE `explain_blocks` (
     FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Evidence Files Table
+-- 9. Evidence Files Table
 CREATE TABLE `evidence_files` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -149,7 +163,7 @@ CREATE TABLE `evidence_files` (
     FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. Phase Results Table
+-- 10. Phase Results Table
 CREATE TABLE `phase_results` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -169,7 +183,7 @@ CREATE TABLE `phase_results` (
     FOREIGN KEY (`phase_id`) REFERENCES `phases` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. CEO Overrides Table
+-- 11. CEO Overrides Table
 CREATE TABLE `ceo_overrides` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -186,7 +200,7 @@ CREATE TABLE `ceo_overrides` (
     FOREIGN KEY (`ceo_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. Follow-Up Tasks Table
+-- 12. Follow-Up Tasks Table
 CREATE TABLE `follow_up_tasks` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
@@ -203,7 +217,7 @@ CREATE TABLE `follow_up_tasks` (
     FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 12. Assessment History / Audit Table
+-- 13. Assessment History / Audit Table
 CREATE TABLE `assessment_history` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `assessment_id` INT UNSIGNED NOT NULL,
