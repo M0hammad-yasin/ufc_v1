@@ -45,6 +45,97 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $assessments = $stmt->fetchAll();
 
+/**
+ * Render table rows for assessments list (used for both full page load and AJAX live search)
+ */
+function renderAssessmentRows(array $assessments, string $searchQuery = ''): string {
+    ob_start();
+    if (empty($assessments)): ?>
+        <tr>
+            <td colspan="7" class="py-10 text-center text-slate-400">
+                <?php if (!empty($searchQuery)): ?>
+                    No assessments found matching "<span class="text-slate-200 font-semibold"><?= htmlspecialchars($searchQuery) ?></span>".
+                <?php else: ?>
+                    No assessment records found. Click <a href="/ufc_v1/assessment/start.php" class="text-[#c9a84c] underline font-semibold">Intake New Lead</a> to start.
+                <?php endif; ?>
+            </td>
+        </tr>
+    <?php else: ?>
+        <?php foreach ($assessments as $ass): 
+            $status = $ass['status'];
+            $badgeClass = 'bg-blue-950/80 text-blue-300 border-blue-600';
+            $statusLabel = 'In Progress';
+
+            if ($status === 'PROCEED_TO_PROPOSAL') {
+                $badgeClass = 'bg-emerald-950/80 text-emerald-300 border-emerald-500';
+                $statusLabel = 'Passed · Proceed to Proposal';
+            } elseif ($status === 'HOLD') {
+                $badgeClass = 'bg-amber-950/80 text-[#c9a84c] border-amber-500';
+                $statusLabel = 'HOLD — Requirements Pending';
+            } elseif ($status === 'NOT_A_FIT') {
+                $badgeClass = 'bg-red-950/80 text-red-300 border-red-500';
+                $statusLabel = 'Not A Fit';
+            } elseif ($status === 'ESCALATED') {
+                $badgeClass = 'bg-purple-950/80 text-purple-300 border-purple-500';
+                $statusLabel = 'Escalated · CEO Review';
+            }
+        ?>
+        <tr class="hover:bg-[#1a3a5c]/40 transition-colors">
+            <td class="py-3.5 px-4">
+                <div class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($ass['assessment_number']) ?></div>
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" class="font-bold text-sm text-slate-100 hover:text-[#c9a84c] transition-colors">
+                    <?= htmlspecialchars($ass['client_name']) ?>
+                </a>
+            </td>
+            <td class="py-3.5 px-4 text-slate-300 max-w-xs truncate">
+                <?= htmlspecialchars($ass['project_address']) ?>
+            </td>
+            <td class="py-3.5 px-4 text-center">
+                <span class="px-2.5 py-1 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold border border-[#234d7a]">
+                    P<?= $ass['current_phase'] ?>
+                </span>
+            </td>
+            <td class="py-3.5 px-4">
+                <span class="px-2.5 py-1 rounded text-[11px] font-semibold border inline-block <?= $badgeClass ?>">
+                    <?= $statusLabel ?>
+                </span>
+                <?php if ($ass['hold_deadline_date'] && $status === 'HOLD'): ?>
+                    <div class="text-[10px] text-slate-400 mt-1">Due: <?= formatDate($ass['hold_deadline_date']) ?></div>
+                <?php endif; ?>
+            </td>
+            <td class="py-3.5 px-4 text-slate-300">
+                <?= htmlspecialchars($ass['assessor_name'] ?? 'System') ?>
+            </td>
+            <td class="py-3.5 px-4 text-slate-400 text-[11px]">
+                <?= formatDate($ass['updated_at'], 'M j, Y H:i') ?>
+            </td>
+            <td class="py-3.5 px-4 text-right space-x-2">
+                <a href="/ufc_v1/assessment/question.php?id=<?= $ass['id'] ?>" 
+                   class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
+                    Run
+                </a>
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" 
+                   class="px-3 py-1 bg-[#060f1e] hover:bg-[#1a3a5c] text-[#c9a84c] rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
+                    Details
+                </a>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    <?php endif;
+    return (string)ob_get_clean();
+}
+
+// Handle AJAX Live Search Request
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => true,
+        'html'    => renderAssessmentRows($assessments, $searchQuery),
+        'count'   => count($assessments),
+    ]);
+    exit;
+}
+
 // Counts for filter pills
 $countsStmt = $pdo->query("SELECT status, COUNT(*) as cnt FROM assessments GROUP BY status");
 $statusCounts = [
@@ -112,24 +203,45 @@ require_once __DIR__ . '/../components/header.php';
             </a>
         </div>
 
-        <!-- Search Form -->
-        <form action="" method="GET" class="w-full md:w-64">
-            <?php if (!empty($statusFilter)): ?>
-                <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>">
-            <?php endif; ?>
-            <div class="relative">
-                <input type="text" name="search" value="<?= htmlspecialchars($searchQuery) ?>" 
-                       placeholder="Search client, address..." 
-                       class="w-full pl-9 pr-3 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-md text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#c9a84c]">
-                <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Search Form with Live Search & Debounce -->
+        <form action="" method="GET" id="live-search-form" class="w-full md:w-72">
+            <input type="hidden" name="status" id="search-status-filter" value="<?= htmlspecialchars($statusFilter) ?>">
+            <div class="relative flex items-center">
+                <!-- Search Icon -->
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
+
+                <input type="text" 
+                       name="search" 
+                       id="live-search-input" 
+                       value="<?= htmlspecialchars($searchQuery) ?>" 
+                       placeholder="Search client, address, ref..." 
+                       autocomplete="off"
+                       class="w-full pl-9 pr-8 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-md text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] transition-all">
+
+                <!-- Loading Spinner Icon -->
+                <div id="search-loading-spinner" class="hidden absolute right-2.5 flex items-center pointer-events-none">
+                    <svg class="animate-spin h-3.5 w-3.5 text-[#c9a84c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                </div>
+
+                <!-- Clear Button -->
+                <button type="button" 
+                        id="search-clear-btn" 
+                        class="<?= empty($searchQuery) ? 'hidden' : '' ?> absolute right-2.5 text-slate-400 hover:text-white transition-colors" 
+                        title="Clear search"
+                        aria-label="Clear search">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
             </div>
         </form>
     </div>
 
     <!-- Assessments Table -->
-    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl shadow-xl overflow-hidden">
+    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl shadow-xl overflow-hidden relative">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
@@ -143,79 +255,148 @@ require_once __DIR__ . '/../components/header.php';
                         <th class="py-3.5 px-4 font-semibold text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#1e3e68]">
-                    <?php if (empty($assessments)): ?>
-                        <tr>
-                            <td colspan="7" class="py-10 text-center text-slate-400">
-                                No assessment records found. Click <a href="/ufc_v1/assessment/start.php" class="text-[#c9a84c] underline font-semibold">Intake New Lead</a> to start.
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($assessments as $ass): 
-                            $status = $ass['status'];
-                            $badgeClass = 'bg-blue-950/80 text-blue-300 border-blue-600';
-                            $statusLabel = 'In Progress';
-
-                            if ($status === 'PROCEED_TO_PROPOSAL') {
-                                $badgeClass = 'bg-emerald-950/80 text-emerald-300 border-emerald-500';
-                                $statusLabel = 'Passed · Proceed to Proposal';
-                            } elseif ($status === 'HOLD') {
-                                $badgeClass = 'bg-amber-950/80 text-[#c9a84c] border-amber-500';
-                                $statusLabel = 'HOLD — Requirements Pending';
-                            } elseif ($status === 'NOT_A_FIT') {
-                                $badgeClass = 'bg-red-950/80 text-red-300 border-red-500';
-                                $statusLabel = 'Not A Fit';
-                            } elseif ($status === 'ESCALATED') {
-                                $badgeClass = 'bg-purple-950/80 text-purple-300 border-purple-500';
-                                $statusLabel = 'Escalated · CEO Review';
-                            }
-                        ?>
-                        <tr class="hover:bg-[#1a3a5c]/40 transition-colors">
-                            <td class="py-3.5 px-4">
-                                <div class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($ass['assessment_number']) ?></div>
-                                <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" class="font-bold text-sm text-slate-100 hover:text-[#c9a84c] transition-colors">
-                                    <?= htmlspecialchars($ass['client_name']) ?>
-                                </a>
-                            </td>
-                            <td class="py-3.5 px-4 text-slate-300 max-w-xs truncate">
-                                <?= htmlspecialchars($ass['project_address']) ?>
-                            </td>
-                            <td class="py-3.5 px-4 text-center">
-                                <span class="px-2.5 py-1 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold border border-[#234d7a]">
-                                    P<?= $ass['current_phase'] ?>
-                                </span>
-                            </td>
-                            <td class="py-3.5 px-4">
-                                <span class="px-2.5 py-1 rounded text-[11px] font-semibold border inline-block <?= $badgeClass ?>">
-                                    <?= $statusLabel ?>
-                                </span>
-                                <?php if ($ass['hold_deadline_date'] && $status === 'HOLD'): ?>
-                                    <div class="text-[10px] text-slate-400 mt-1">Due: <?= formatDate($ass['hold_deadline_date']) ?></div>
-                                <?php endif; ?>
-                            </td>
-                            <td class="py-3.5 px-4 text-slate-300">
-                                <?= htmlspecialchars($ass['assessor_name'] ?? 'System') ?>
-                            </td>
-                            <td class="py-3.5 px-4 text-slate-400 text-[11px]">
-                                <?= formatDate($ass['updated_at'], 'M j, Y H:i') ?>
-                            </td>
-                            <td class="py-3.5 px-4 text-right space-x-2">
-                                <a href="/ufc_v1/assessment/question.php?id=<?= $ass['id'] ?>" 
-                                   class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
-                                    Run
-                                </a>
-                                <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" 
-                                   class="px-3 py-1 bg-[#060f1e] hover:bg-[#1a3a5c] text-[#c9a84c] rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
-                                    Details
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <tbody id="assessments-table-body" class="divide-y divide-[#1e3e68] transition-opacity duration-150">
+                    <?= renderAssessmentRows($assessments, $searchQuery) ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<!-- Live Search Debounce Script -->
+<script>
+(function() {
+    const searchInput = document.getElementById('live-search-input');
+    const searchForm = document.getElementById('live-search-form');
+    const tableBody = document.getElementById('assessments-table-body');
+    const clearBtn = document.getElementById('search-clear-btn');
+    const spinner = document.getElementById('search-loading-spinner');
+    const statusInput = document.getElementById('search-status-filter');
+
+    if (!searchInput || !tableBody) return;
+
+    // Configuration: Debounce delay in milliseconds to prevent excessive database queries on every keystroke
+    const DEBOUNCE_DELAY_MS = 350;
+    let debounceTimer = null;
+    let currentAbortController = null;
+    let lastQueriedValue = searchInput.value.trim();
+
+    /**
+     * Executes the search request to fetch updated table rows
+     * @param {string} query - The search keyword
+     */
+    async function executeSearch(query) {
+        const trimmedQuery = query.trim();
+
+        // Update clear button visibility
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', trimmedQuery.length === 0);
+        }
+
+        // Abort any ongoing in-flight request to prevent race conditions
+        if (currentAbortController) {
+            currentAbortController.abort();
+        }
+        currentAbortController = new AbortController();
+
+        // Show spinner and subtle dimming on table
+        if (spinner) spinner.classList.remove('hidden');
+        if (clearBtn && trimmedQuery.length > 0) clearBtn.classList.add('hidden');
+        tableBody.classList.add('opacity-60');
+
+        const statusVal = statusInput ? statusInput.value : '';
+        const params = new URLSearchParams();
+        params.set('ajax', '1');
+        if (statusVal) params.set('status', statusVal);
+        if (trimmedQuery) params.set('search', trimmedQuery);
+
+        try {
+            const response = await fetch(`/ufc_v1/admin/assessments.php?${params.toString()}`, {
+                method: 'GET',
+                signal: currentAbortController.signal,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const data = await response.json();
+            if (data && typeof data.html === 'string') {
+                tableBody.innerHTML = data.html;
+                lastQueriedValue = trimmedQuery;
+
+                // Sync URL query string without reloading page
+                const browserUrl = new URL(window.location.href);
+                if (trimmedQuery) {
+                    browserUrl.searchParams.set('search', trimmedQuery);
+                } else {
+                    browserUrl.searchParams.delete('search');
+                }
+                if (statusVal) {
+                    browserUrl.searchParams.set('status', statusVal);
+                } else {
+                    browserUrl.searchParams.delete('status');
+                }
+                window.history.replaceState({}, '', browserUrl.toString());
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Live search request error:', err);
+            }
+        } finally {
+            if (spinner) spinner.classList.add('hidden');
+            if (clearBtn && searchInput.value.trim().length > 0) clearBtn.classList.remove('hidden');
+            tableBody.classList.remove('opacity-60');
+        }
+    }
+
+    /**
+     * Debounced input handler (hook that stops DB search for few ms to avoid query per keypress)
+     */
+    function handleInput() {
+        const query = searchInput.value;
+
+        // Toggle clear button immediately while typing
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', query.trim().length === 0);
+        }
+
+        // Reset previous debounce timer on every keystroke
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        // Hook delay before querying DB
+        debounceTimer = setTimeout(() => {
+            if (searchInput.value.trim() !== lastQueriedValue) {
+                executeSearch(searchInput.value);
+            }
+        }, DEBOUNCE_DELAY_MS);
+    }
+
+    // Input event for live debounced searching
+    searchInput.addEventListener('input', handleInput);
+
+    // Prevent full page reload on Enter, but execute search immediately
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (debounceTimer) clearTimeout(debounceTimer);
+            executeSearch(searchInput.value);
+        });
+    }
+
+    // Clear button action
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            if (debounceTimer) clearTimeout(debounceTimer);
+            searchInput.focus();
+            executeSearch('');
+        });
+    }
+})();
+</script>
 
 <?php require_once __DIR__ . '/../components/footer.php'; ?>
