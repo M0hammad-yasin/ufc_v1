@@ -104,9 +104,18 @@ CREATE TABLE `assessments` (
     `requirements_letter_generated_at` DATETIME      DEFAULT NULL,
     `decline_letter_generated_at`      DATETIME      DEFAULT NULL,
     `completed_at`                     DATETIME      DEFAULT NULL,
+    `phase_1_completed_at`             DATETIME      DEFAULT NULL,
+    `checkpoint_pre_assessment`        TINYINT(1)    NOT NULL DEFAULT 0,
+    `checkpoint_pre_assessment_at`     DATETIME      DEFAULT NULL,
+    `checkpoint_client_meetup`         TINYINT(1)    NOT NULL DEFAULT 0,
+    `checkpoint_client_meetup_at`      DATETIME      DEFAULT NULL,
+    `checkpoint_build_proposal`        TINYINT(1)    NOT NULL DEFAULT 0,
+    `checkpoint_build_proposal_at`     DATETIME      DEFAULT NULL,
+    `last_updated_by_user_id`          INT UNSIGNED  DEFAULT NULL,
     `created_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`assessor_id`) REFERENCES `users` (`id`),
+    FOREIGN KEY (`last_updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
     FOREIGN KEY (`tier_id`)    REFERENCES `tiers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

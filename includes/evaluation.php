@@ -237,6 +237,12 @@ function saveAnswerAndEvaluate(int $assessmentId, int $questionId, array $data, 
         $userId
     ]);
 
+    // Update last_updated_by on assessment
+    if ($userId) {
+        $stmtUpd = $pdo->prepare("UPDATE `assessments` SET `last_updated_by_user_id` = ? WHERE `id` = ?");
+        $stmtUpd->execute([$userId, $assessmentId]);
+    }
+
     // Handle Explain Block if provided
     if (!empty($data['explain_reason'])) {
         $reason = trim((string)$data['explain_reason']);
@@ -491,28 +497,56 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
 
 function updateAssessmentOverallStatus(int $assessmentId, int $phaseNumber, string $phaseGateResult): void {
     $pdo = getDbConnection();
+    ensureCheckReportColumns($pdo);
+    $currentUserId = $_SESSION['user']['id'] ?? null;
 
     if ($phaseGateResult === 'PASS') {
-        if ($phaseNumber < 4) {
+        if ($phaseNumber === 1) {
+            $stmt = $pdo->prepare("
+                UPDATE `assessments` 
+                SET `current_phase` = 2, 
+                    `status` = 'IN_PROGRESS', 
+                    `phase_1_completed_at` = COALESCE(`phase_1_completed_at`, NOW()),
+                    `checkpoint_pre_assessment` = 1,
+                    `checkpoint_pre_assessment_at` = COALESCE(`checkpoint_pre_assessment_at`, NOW()),
+                    `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`)
+                WHERE `id` = ?
+            ");
+            $stmt->execute([$currentUserId, $assessmentId]);
+        } elseif ($phaseNumber < 4) {
             $nextPhase = $phaseNumber + 1;
-            $stmt = $pdo->prepare("UPDATE `assessments` SET `current_phase` = ?, `status` = 'IN_PROGRESS' WHERE `id` = ?");
-            $stmt->execute([$nextPhase, $assessmentId]);
+            $stmt = $pdo->prepare("
+                UPDATE `assessments` 
+                SET `current_phase` = ?, 
+                    `status` = 'IN_PROGRESS',
+                    `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`)
+                WHERE `id` = ?
+            ");
+            $stmt->execute([$nextPhase, $currentUserId, $assessmentId]);
         } else {
             // Phase 4 Passed -> PROCEED TO PROPOSAL
-            $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'PROCEED_TO_PROPOSAL', `completed_at` = NOW() WHERE `id` = ?");
-            $stmt->execute([$assessmentId]);
+            $stmt = $pdo->prepare("
+                UPDATE `assessments` 
+                SET `status` = 'PROCEED_TO_PROPOSAL', 
+                    `completed_at` = NOW(),
+                    `checkpoint_build_proposal` = 1,
+                    `checkpoint_build_proposal_at` = COALESCE(`checkpoint_build_proposal_at`, NOW()),
+                    `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`)
+                WHERE `id` = ?
+            ");
+            $stmt->execute([$currentUserId, $assessmentId]);
         }
     } elseif ($phaseGateResult === 'FAIL_HOLD') {
         $deadline = date('Y-m-d', strtotime('+30 days'));
-        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'HOLD', `hold_deadline_date` = ? WHERE `id` = ?");
-        $stmt->execute([$deadline, $assessmentId]);
+        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'HOLD', `hold_deadline_date` = ?, `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`) WHERE `id` = ?");
+        $stmt->execute([$deadline, $currentUserId, $assessmentId]);
     } elseif ($phaseGateResult === 'FAIL_STOP') {
         $reason = ($phaseNumber === 4) ? 'UFC_CAPACITY' : 'STOP_TRIGGER';
-        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'NOT_A_FIT', `decline_reason` = ?, `completed_at` = NOW() WHERE `id` = ?");
-        $stmt->execute([$reason, $assessmentId]);
+        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'NOT_A_FIT', `decline_reason` = ?, `completed_at` = NOW(), `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`) WHERE `id` = ?");
+        $stmt->execute([$reason, $currentUserId, $assessmentId]);
     } elseif ($phaseGateResult === 'ESCALATED') {
-        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'ESCALATED' WHERE `id` = ?");
-        $stmt->execute([$assessmentId]);
+        $stmt = $pdo->prepare("UPDATE `assessments` SET `status` = 'ESCALATED', `last_updated_by_user_id` = COALESCE(?, `last_updated_by_user_id`) WHERE `id` = ?");
+        $stmt->execute([$currentUserId, $assessmentId]);
     }
 }
 

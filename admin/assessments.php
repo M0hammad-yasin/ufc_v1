@@ -11,6 +11,7 @@ requireLogin();
 $currentUser = getCurrentUser();
 
 $pdo = getDbConnection();
+ensureCheckReportColumns($pdo);
 
 // Filtering
 $statusFilter = trim($_GET['status'] ?? '');
@@ -79,6 +80,8 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                 $badgeClass = 'bg-purple-950/80 text-purple-300 border-purple-500';
                 $statusLabel = 'Escalated · CEO Review';
             }
+
+            $sla = getAssessmentSlaStatus($ass);
         ?>
         <tr class="hover:bg-[#1a3a5c]/40 transition-colors">
             <td class="py-3.5 px-4">
@@ -102,6 +105,11 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                 <?php if ($ass['hold_deadline_date'] && $status === 'HOLD'): ?>
                     <div class="text-[10px] text-slate-400 mt-1">Due: <?= formatDate($ass['hold_deadline_date']) ?></div>
                 <?php endif; ?>
+                <?php if ($sla['is_active']): ?>
+                    <div class="mt-1.5 flex items-center">
+                        <?= $sla['badge_html'] ?>
+                    </div>
+                <?php endif; ?>
             </td>
             <td class="py-3.5 px-4 text-slate-300">
                 <?= htmlspecialchars($ass['assessor_name'] ?? 'System') ?>
@@ -109,13 +117,19 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
             <td class="py-3.5 px-4 text-slate-400 text-[11px]">
                 <?= formatDate($ass['updated_at'], 'M j, Y H:i') ?>
             </td>
-            <td class="py-3.5 px-4 text-right space-x-2">
+            <td class="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>&tab=check-report" 
+                   title="View Check Report &amp; Milestones"
+                   class="px-2.5 py-1 bg-[#060f1e] hover:bg-[#1a3a5c] text-[#c9a84c] hover:text-white rounded border border-[#c9a84c]/40 text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                    <?= $sla['dot_html'] ?>
+                    <span>Report</span>
+                </a>
                 <a href="/ufc_v1/assessment/question.php?id=<?= $ass['id'] ?>" 
-                   class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
+                   class="px-2.5 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
                     Run
                 </a>
                 <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" 
-                   class="px-3 py-1 bg-[#060f1e] hover:bg-[#1a3a5c] text-[#c9a84c] rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
+                   class="px-2.5 py-1 bg-[#060f1e] hover:bg-[#1a3a5c] text-slate-300 hover:text-white rounded border border-[#1e3e68] text-xs font-semibold transition-colors">
                     Details
                 </a>
             </td>
