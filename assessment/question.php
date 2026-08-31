@@ -326,8 +326,13 @@ require_once __DIR__ . '/../components/phase-nav.php';
                            class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#1a3a5c] file:text-slate-200 hover:file:bg-[#234d7a]">
                     
                     <?php if (!empty($evidenceFiles)): ?>
-                        <div class="mt-2 text-xs text-emerald-400">
-                            Attached: <?= htmlspecialchars($evidenceFiles[0]['original_name']) ?> (<?= round($evidenceFiles[0]['file_size'] / 1024) ?> KB)
+                        <div class="mt-2 text-xs text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>Attached: <strong><?= htmlspecialchars($evidenceFiles[0]['original_name']) ?></strong> (<?= round($evidenceFiles[0]['file_size'] / 1024) ?> KB)</span>
+                            <a href="/ufc_v1/uploads/<?= htmlspecialchars($evidenceFiles[0]['stored_filename']) ?>" target="_blank" class="underline text-[#c9a84c] hover:text-white ml-2 inline-flex items-center gap-1 font-semibold">
+                                <span>View Document</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
                         </div>
                     <?php endif; ?>
                 </div>

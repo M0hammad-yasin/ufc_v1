@@ -42,6 +42,10 @@ $explainBlocks = $stmtEB->fetchAll();
 $stmtFiles = $pdo->prepare("SELECT f.*, q.question_number FROM evidence_files f JOIN questions q ON f.question_id = q.id WHERE f.assessment_id = ? ORDER BY f.created_at DESC");
 $stmtFiles->execute([$assessmentId]);
 $evidenceFiles = $stmtFiles->fetchAll();
+$evidenceFilesMap = [];
+foreach ($evidenceFiles as $ef) {
+    $evidenceFilesMap[$ef['question_id']] = $ef;
+}
 
 // Fetch CEO Overrides
 $stmtOverrides = $pdo->prepare("SELECT o.*, u.name as ceo_name, p.phase_number FROM ceo_overrides o JOIN users u ON o.ceo_user_id = u.id JOIN phases p ON o.phase_id = p.id WHERE o.assessment_id = ?");
@@ -234,6 +238,17 @@ require_once __DIR__ . '/../components/phase-nav.php';
                                 <td class="py-2 px-2 text-slate-400"><?= $q['owner'] ?></td>
                                 <td class="py-2 px-2 font-semibold text-slate-200">
                                     <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
+                                    <?php if (isset($evidenceFilesMap[$q['id']])): 
+                                        $ef = $evidenceFilesMap[$q['id']];
+                                    ?>
+                                        <a href="/ufc_v1/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>" 
+                                           target="_blank" 
+                                           title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>" 
+                                           class="ml-2 text-[#c9a84c] hover:text-white inline-flex items-center gap-1 text-[11px] font-normal underline">
+                                            <i class="fa-solid fa-paperclip text-xs"></i>
+                                            <span>Document</span>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="py-2 px-2">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= ($ans['status_light'] ?? '') === 'GREEN' ? 'badge-green' : (($ans['status_light'] ?? '') === 'AMBER' ? 'badge-amber' : (($ans['status_light'] ?? '') === 'RED' ? 'badge-red' : 'badge-neutral')) ?>">
