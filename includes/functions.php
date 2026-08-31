@@ -96,8 +96,14 @@ function ensureCheckReportColumns(PDO $pdo): void {
         if (!isset($existingCols['checkpoint_build_proposal_at'])) {
             $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_build_proposal_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_build_proposal`");
         }
+        if (!isset($existingCols['checkpoint_final_bid'])) {
+            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_final_bid` TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_build_proposal_at`");
+        }
+        if (!isset($existingCols['checkpoint_final_bid_at'])) {
+            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_final_bid_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_final_bid`");
+        }
         if (!isset($existingCols['last_updated_by_user_id'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `last_updated_by_user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `checkpoint_build_proposal_at`");
+            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `last_updated_by_user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `checkpoint_final_bid_at`");
         }
     } catch (Exception $e) {
         error_log("Column check/migration failed: " . $e->getMessage());
@@ -134,13 +140,13 @@ function getAssessmentDetails(int $assessmentId): ?array {
  *
  * Rules:
  * - If Phase 1 is not yet passed: alert_level = 'NONE'
- * - If Build Proposal milestone is checked: alert_level = 'COMPLETED'
+ * - If Proposal Submission or Final Bid milestone is checked: alert_level = 'COMPLETED'
  * - Within Week 1 (Days 1 to 7 since Phase 1 pass): alert_level = 'YELLOW' (Yellow blinking notification)
  * - Week 2 & Beyond (Days 8 to 14+ since Phase 1 pass): alert_level = 'RED' (Red blinking urgent notification)
  */
 function getAssessmentSlaStatus(array $assessment): array {
     $phase1CompletedAt = $assessment['phase_1_completed_at'] ?? null;
-    $proposalCompleted = (bool)($assessment['checkpoint_build_proposal'] ?? 0);
+    $proposalCompleted = (bool)($assessment['checkpoint_build_proposal'] ?? 0) || (bool)($assessment['checkpoint_final_bid'] ?? 0);
     $status = $assessment['status'] ?? 'IN_PROGRESS';
 
     // Check if Phase 1 was completed but phase_1_completed_at wasn't stamped yet

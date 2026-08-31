@@ -49,7 +49,9 @@ try {
         'checkpoint_client_meetup_at'  => "DATETIME DEFAULT NULL AFTER `checkpoint_client_meetup`",
         'checkpoint_build_proposal'    => "TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_client_meetup_at`",
         'checkpoint_build_proposal_at' => "DATETIME DEFAULT NULL AFTER `checkpoint_build_proposal`",
-        'last_updated_by_user_id'      => "INT UNSIGNED DEFAULT NULL AFTER `checkpoint_build_proposal_at`",
+        'checkpoint_final_bid'         => "TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_build_proposal_at`",
+        'checkpoint_final_bid_at'      => "DATETIME DEFAULT NULL AFTER `checkpoint_final_bid`",
+        'last_updated_by_user_id'      => "INT UNSIGNED DEFAULT NULL AFTER `checkpoint_final_bid_at`",
     ];
 
     $addedCount = 0;

@@ -111,6 +111,8 @@ CREATE TABLE `assessments` (
     `checkpoint_client_meetup_at`      DATETIME      DEFAULT NULL,
     `checkpoint_build_proposal`        TINYINT(1)    NOT NULL DEFAULT 0,
     `checkpoint_build_proposal_at`     DATETIME      DEFAULT NULL,
+    `checkpoint_final_bid`             TINYINT(1)    NOT NULL DEFAULT 0,
+    `checkpoint_final_bid_at`          DATETIME      DEFAULT NULL,
     `last_updated_by_user_id`          INT UNSIGNED  DEFAULT NULL,
     `created_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

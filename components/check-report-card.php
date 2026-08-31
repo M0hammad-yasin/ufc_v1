@@ -22,9 +22,10 @@ $status = $assessment['status'] ?? 'IN_PROGRESS';
 $creatorName = !empty($assessment['assessor_name']) ? $assessment['assessor_name'] : 'System';
 $updaterName = !empty($assessment['last_updated_by_name']) ? $assessment['last_updated_by_name'] : $creatorName;
 
-$chkPreAssessment = (bool)($assessment['checkpoint_pre_assessment'] ?? 0);
-$chkClientMeetup  = (bool)($assessment['checkpoint_client_meetup'] ?? 0);
-$chkBuildProposal = (bool)($assessment['checkpoint_build_proposal'] ?? 0);
+$chkAssessment        = (bool)($assessment['checkpoint_pre_assessment'] ?? 0);
+$chkWalkThrough       = (bool)($assessment['checkpoint_client_meetup'] ?? 0);
+$chkProposalSubmission = (bool)($assessment['checkpoint_build_proposal'] ?? 0);
+$chkFinalBid          = (bool)($assessment['checkpoint_final_bid'] ?? 0);
 
 $statusBadgeClass = 'bg-blue-950/80 text-blue-300 border-blue-600';
 $statusLabel = 'In Progress';
@@ -158,81 +159,107 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
             </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- 1. Pre-Assessment Checkbox -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkPreAssessment ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 1. Assessment Checkbox -->
+            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkAssessment ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
                 <div class="flex items-center h-5 mt-0.5">
                     <input type="checkbox" 
-                           id="chk-pre-assessment"
-                           data-checkpoint="pre_assessment"
+                           id="chk-assessment"
+                           data-checkpoint="assessment"
                            data-assessment-id="<?= (int)$assessment['id'] ?>"
-                           <?= $chkPreAssessment ? 'checked' : '' ?>
+                           <?= $chkAssessment ? 'checked' : '' ?>
                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 cursor-pointer transition-colors">
                 </div>
                 <div class="flex-1 select-none">
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">1. Pre-Assessment</span>
-                        <span id="badge-pre-assessment" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkPreAssessment ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkPreAssessment ? 'Completed' : 'Pending' ?>
+                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">1. Assessment</span>
+                        <span id="badge-assessment" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkAssessment ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                            <?= $chkAssessment ? 'Completed' : 'Pending' ?>
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-400 mt-1 leading-snug">
                         Document readiness &amp; Phase 1 qualification gate verified.
                     </p>
-                    <div id="time-pre-assessment" class="text-[10px] text-slate-500 mt-2 font-mono">
+                    <div id="time-assessment" class="text-[10px] text-slate-500 mt-2 font-mono">
                         <?= $assessment['checkpoint_pre_assessment_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_pre_assessment_at'], 'M j, Y H:i') : 'Pending verification' ?>
                     </div>
                 </div>
             </label>
 
-            <!-- 2. Client Meetup Checkbox -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkClientMeetup ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
+            <!-- 2. Walk Through Checkbox -->
+            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkWalkThrough ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
                 <div class="flex items-center h-5 mt-0.5">
                     <input type="checkbox" 
-                           id="chk-client-meetup"
-                           data-checkpoint="client_meetup"
+                           id="chk-walk-through"
+                           data-checkpoint="walk_through"
                            data-assessment-id="<?= (int)$assessment['id'] ?>"
-                           <?= $chkClientMeetup ? 'checked' : '' ?>
+                           <?= $chkWalkThrough ? 'checked' : '' ?>
                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 cursor-pointer transition-colors">
                 </div>
                 <div class="flex-1 select-none">
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">2. Client Meetup</span>
-                        <span id="badge-client-meetup" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkClientMeetup ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkClientMeetup ? 'Completed' : 'Pending' ?>
+                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">2. Walk Through</span>
+                        <span id="badge-walk-through" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkWalkThrough ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                            <?= $chkWalkThrough ? 'Completed' : 'Pending' ?>
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        In-person or video consultation held with client lead.
+                        On-site / virtual project walkthrough &amp; discovery held.
                     </p>
-                    <div id="time-client-meetup" class="text-[10px] text-slate-500 mt-2 font-mono">
-                        <?= $assessment['checkpoint_client_meetup_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_client_meetup_at'], 'M j, Y H:i') : 'Pending meeting' ?>
+                    <div id="time-walk-through" class="text-[10px] text-slate-500 mt-2 font-mono">
+                        <?= $assessment['checkpoint_client_meetup_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_client_meetup_at'], 'M j, Y H:i') : 'Pending walkthrough' ?>
                     </div>
                 </div>
             </label>
 
-            <!-- 3. Build Proposal Checkbox -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkBuildProposal ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
+            <!-- 3. Proposal Submission Checkbox -->
+            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkProposalSubmission ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
                 <div class="flex items-center h-5 mt-0.5">
                     <input type="checkbox" 
-                           id="chk-build-proposal"
-                           data-checkpoint="build_proposal"
+                           id="chk-proposal-submission"
+                           data-checkpoint="proposal_submission"
                            data-assessment-id="<?= (int)$assessment['id'] ?>"
-                           <?= $chkBuildProposal ? 'checked' : '' ?>
+                           <?= $chkProposalSubmission ? 'checked' : '' ?>
                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 cursor-pointer transition-colors">
                 </div>
                 <div class="flex-1 select-none">
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">3. Build Proposal</span>
-                        <span id="badge-build-proposal" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkBuildProposal ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkBuildProposal ? 'Completed' : 'Pending' ?>
+                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">3. Proposal Submission</span>
+                        <span id="badge-proposal-submission" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkProposalSubmission ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                            <?= $chkProposalSubmission ? 'Completed' : 'Pending' ?>
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        Full construction proposal, scope of work &amp; pricing generated.
+                        Full scope, line items &amp; initial pricing delivered.
                     </p>
-                    <div id="time-build-proposal" class="text-[10px] text-slate-500 mt-2 font-mono">
+                    <div id="time-proposal-submission" class="text-[10px] text-slate-500 mt-2 font-mono">
                         <?= $assessment['checkpoint_build_proposal_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_build_proposal_at'], 'M j, Y H:i') : 'Pending proposal' ?>
+                    </div>
+                </div>
+            </label>
+
+            <!-- 4. Final Bid Checkbox -->
+            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer <?= $chkFinalBid ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68] hover:border-[#2a558c]' ?>">
+                <div class="flex items-center h-5 mt-0.5">
+                    <input type="checkbox" 
+                           id="chk-final-bid"
+                           data-checkpoint="final_bid"
+                           data-assessment-id="<?= (int)$assessment['id'] ?>"
+                           <?= $chkFinalBid ? 'checked' : '' ?>
+                           class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 cursor-pointer transition-colors">
+                </div>
+                <div class="flex-1 select-none">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">4. Final Bid</span>
+                        <span id="badge-final-bid" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkFinalBid ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                            <?= $chkFinalBid ? 'Completed' : 'Pending' ?>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+                        Final revised bid &amp; contract execution confirmed.
+                    </p>
+                    <div id="time-final-bid" class="text-[10px] text-slate-500 mt-2 font-mono">
+                        <?= (!empty($assessment['checkpoint_final_bid_at'])) ? 'Marked: ' . formatDate($assessment['checkpoint_final_bid_at'], 'M j, Y H:i') : 'Pending final bid' ?>
                     </div>
                 </div>
             </label>
@@ -256,8 +283,8 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
             const assessmentId = this.dataset.assessmentId;
             const isChecked = this.checked;
             const parentLabel = this.closest('label');
-            const badge = document.getElementById(`badge-${checkpoint.replace('_', '-')}`);
-            const timeEl = document.getElementById(`time-${checkpoint.replace('_', '-')}`);
+            const badge = document.getElementById(`badge-${checkpoint.replace(/_/g, '-')}`);
+            const timeEl = document.getElementById(`time-${checkpoint.replace(/_/g, '-')}`);
 
             // Visual toggle feedback
             if (parentLabel) {

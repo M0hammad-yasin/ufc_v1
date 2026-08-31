@@ -12,7 +12,9 @@ ALTER TABLE `assessments`
     ADD COLUMN IF NOT EXISTS `checkpoint_client_meetup_at`      DATETIME      DEFAULT NULL AFTER `checkpoint_client_meetup`,
     ADD COLUMN IF NOT EXISTS `checkpoint_build_proposal`        TINYINT(1)    NOT NULL DEFAULT 0 AFTER `checkpoint_client_meetup_at`,
     ADD COLUMN IF NOT EXISTS `checkpoint_build_proposal_at`     DATETIME      DEFAULT NULL AFTER `checkpoint_build_proposal`,
-    ADD COLUMN IF NOT EXISTS `last_updated_by_user_id`          INT UNSIGNED  DEFAULT NULL AFTER `checkpoint_build_proposal_at`;
+    ADD COLUMN IF NOT EXISTS `checkpoint_final_bid`             TINYINT(1)    NOT NULL DEFAULT 0 AFTER `checkpoint_build_proposal_at`,
+    ADD COLUMN IF NOT EXISTS `checkpoint_final_bid_at`          DATETIME      DEFAULT NULL AFTER `checkpoint_final_bid`,
+    ADD COLUMN IF NOT EXISTS `last_updated_by_user_id`          INT UNSIGNED  DEFAULT NULL AFTER `checkpoint_final_bid_at`;
 
 -- 2. Add Foreign Key for last_updated_by_user_id (if not already present)
 SET @fk_exists = (

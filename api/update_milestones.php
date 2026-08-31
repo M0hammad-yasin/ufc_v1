@@ -34,9 +34,13 @@ $checkpoint   = trim((string)($body['checkpoint'] ?? ''));
 $value        = !empty($body['value']) && ($body['value'] === true || $body['value'] === 1 || $body['value'] === '1' || $body['value'] === 'true') ? 1 : 0;
 
 $allowedCheckpoints = [
-    'pre_assessment' => ['col' => 'checkpoint_pre_assessment', 'at_col' => 'checkpoint_pre_assessment_at', 'label' => 'Pre-Assessment'],
-    'client_meetup'  => ['col' => 'checkpoint_client_meetup',  'at_col' => 'checkpoint_client_meetup_at',  'label' => 'Client Meetup'],
-    'build_proposal' => ['col' => 'checkpoint_build_proposal', 'at_col' => 'checkpoint_build_proposal_at', 'label' => 'Build Proposal'],
+    'assessment'          => ['col' => 'checkpoint_pre_assessment', 'at_col' => 'checkpoint_pre_assessment_at', 'label' => 'Assessment'],
+    'pre_assessment'      => ['col' => 'checkpoint_pre_assessment', 'at_col' => 'checkpoint_pre_assessment_at', 'label' => 'Assessment'],
+    'walk_through'        => ['col' => 'checkpoint_client_meetup',  'at_col' => 'checkpoint_client_meetup_at',  'label' => 'Walk Through'],
+    'client_meetup'       => ['col' => 'checkpoint_client_meetup',  'at_col' => 'checkpoint_client_meetup_at',  'label' => 'Walk Through'],
+    'proposal_submission' => ['col' => 'checkpoint_build_proposal', 'at_col' => 'checkpoint_build_proposal_at', 'label' => 'Proposal Submission'],
+    'build_proposal'      => ['col' => 'checkpoint_build_proposal', 'at_col' => 'checkpoint_build_proposal_at', 'label' => 'Proposal Submission'],
+    'final_bid'           => ['col' => 'checkpoint_final_bid',      'at_col' => 'checkpoint_final_bid_at',      'label' => 'Final Bid'],
 ];
 
 if ($assessmentId <= 0 || !isset($allowedCheckpoints[$checkpoint])) {
