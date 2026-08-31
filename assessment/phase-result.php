@@ -6,6 +6,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/questions.php';
 require_once __DIR__ . '/../includes/evaluation.php';
+require_once __DIR__ . '/../components/report-body.php';
 
 requireLogin();
 $currentUser = getCurrentUser();
@@ -100,6 +101,13 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 </a>
             </div>
         </div>
+
+        <?php if ($phaseNumber === 4): ?>
+            <!-- Full final report rendered inline for Phase 4 PASS -->
+            <div class="mt-8">
+                <?= renderReportBody($assessmentId, true) ?>
+            </div>
+        <?php endif; ?>
 
     <?php elseif ($gate['status'] === 'FAIL_HOLD'): ?>
         <div class="bg-[#0d1f3c] border-2 border-[#c9a84c] rounded-xl p-8 sm:p-10 shadow-2xl mb-8 relative">
