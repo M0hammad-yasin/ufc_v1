@@ -48,6 +48,8 @@ CREATE TABLE `phases` (
     `the_question` VARCHAR(255) NOT NULL,
     `unlocks_when` VARCHAR(255) NOT NULL,
     `question_count` TINYINT UNSIGNED NOT NULL,
+    `weight` DECIMAL(5,3) NOT NULL DEFAULT 0.000,
+    `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     `description` TEXT,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

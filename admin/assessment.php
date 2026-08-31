@@ -196,10 +196,20 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 <div class="flex items-center gap-3">
                     <?php if ($pRes): ?>
                         <span class="text-xs font-semibold text-slate-300">Score: <?= $pRes['score_earned'] ?>/<?= $pRes['score_possible'] ?> (<?= $pRes['score_percent'] ?>%)</span>
+                        <?php if (!empty($p['threshold'])): ?>
+                            <span class="text-[10px] font-mono text-slate-400 border border-slate-700 rounded px-1.5 py-0.5">
+                                Pass ≥ <?= number_format((float)$p['threshold'], 2) ?> · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
+                            </span>
+                        <?php endif; ?>
                         <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border <?= ($pRes['status'] === 'PASS') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : 'bg-amber-950 text-[#c9a84c] border-amber-500' ?>">
                             <?= $pRes['status'] ?>
                         </span>
                     <?php else: ?>
+                        <?php if (!empty($p['threshold'])): ?>
+                            <span class="text-[10px] font-mono text-slate-500 border border-slate-700 rounded px-1.5 py-0.5">
+                                Pass ≥ <?= number_format((float)$p['threshold'], 2) ?> · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
+                            </span>
+                        <?php endif; ?>
                         <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border bg-slate-800 text-slate-400 border-slate-700">
                             <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?>
                         </span>

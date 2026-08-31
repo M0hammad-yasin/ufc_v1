@@ -44,7 +44,7 @@ try {
     echo "-> Seeded default users (admin@ufc.com, assessor@ufc.com, ceo@ufc.com).\n";
 
     // 4. Seed Phases
-    $stmtPhase = $pdo->prepare("INSERT INTO `phases` (`phase_number`, `title`, `the_question`, `unlocks_when`, `question_count`, `description`) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmtPhase = $pdo->prepare("INSERT INTO `phases` (`phase_number`, `title`, `the_question`, `unlocks_when`, `question_count`, `weight`, `threshold`, `description`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $phases = [
         [
             1,
@@ -52,6 +52,8 @@ try {
             'Can this project be priced at all?',
             'Immediately. Phase 1 runs on every lead.',
             10,
+            0.200,
+            6.50,
             'Runs on every lead, at every contract value, before any other work is done. This is the cheapest test available: a DOB job number can be checked in two minutes. If Phase 1 fails, nothing else is asked and no estimating time is spent. Every question is client-facing.'
         ],
         [
@@ -60,6 +62,8 @@ try {
             'Can this client pay, and are they serious?',
             'Phase 1 returns PASS. Until then this phase is locked and no question in it is displayed.',
             9,
+            0.150,
+            6.00,
             'Unlocks only when Phase 1 passes. This is the phase that separates a buyer from a shopper. A client who will not document funding, and will not sign a preconstruction services agreement, is not going to award a contract. Every question is client-facing except where marked.'
         ],
         [
@@ -68,6 +72,8 @@ try {
             'Can this property lawfully be worked on, and will UFC get paid?',
             'Phase 2 returns PASS. Until then this phase is locked and no question in it is displayed.',
             8,
+            0.220,
+            6.50,
             'Unlocks only when Phase 2 passes. Most of this phase United Five Construction can research directly without asking the client. Run the searches first, then ask the client only about what the searches surface.'
         ],
         [
@@ -76,6 +82,8 @@ try {
             'Do we want this project, and can we deliver it?',
             'Phase 3 returns PASS. Until then this phase is locked and no question in it is displayed.',
             10,
+            0.180,
+            6.50,
             'Unlocks only when Phase 3 passes. The first three phases test the client. This one tests United Five Construction. A client can pass every gate and still be the wrong project for this company at this moment. Marked questions are internal only and never print.'
         ]
     ];

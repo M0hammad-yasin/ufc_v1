@@ -92,12 +92,37 @@ try {
             a.checkpoint_pre_assessment_at = COALESCE(a.checkpoint_pre_assessment_at, pr.evaluated_at, a.updated_at, a.created_at)
         WHERE a.phase_1_completed_at IS NULL
     ";
-    $affected = $pdo->exec($backfillSql);
-    if ($affected > 0) {
-        outputMsg("Backfilled Phase 1 completion timestamp for {$affected} existing assessment(s).", "success");
+    // 4. Check and update `phases` table columns (weight, threshold)
+    $phaseColsStmt = $pdo->query("SHOW COLUMNS FROM `phases`");
+    $existingPhaseCols = [];
+    while ($col = $phaseColsStmt->fetch(PDO::FETCH_ASSOC)) {
+        $existingPhaseCols[$col['Field']] = true;
     }
 
-    outputMsg("Database migration completed successfully! All tables and columns are up to date.", "success");
+    if (!isset($existingPhaseCols['weight'])) {
+        $pdo->exec("ALTER TABLE `phases` ADD COLUMN `weight` DECIMAL(5,3) NOT NULL DEFAULT 0.000 AFTER `question_count`");
+        outputMsg("Added column: phases.weight", "success");
+    }
+    if (!isset($existingPhaseCols['threshold'])) {
+        $pdo->exec("ALTER TABLE `phases` ADD COLUMN `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00 AFTER `weight`");
+        outputMsg("Added column: phases.threshold", "success");
+    }
+
+    // Populate standard weights & thresholds for all 4 phases
+    $phaseConfig = [
+        1 => ['weight' => 0.200, 'threshold' => 6.50],
+        2 => ['weight' => 0.150, 'threshold' => 6.00],
+        3 => ['weight' => 0.220, 'threshold' => 6.50],
+        4 => ['weight' => 0.180, 'threshold' => 6.50],
+    ];
+
+    $stmtUpdPhase = $pdo->prepare("UPDATE `phases` SET `weight` = ?, `threshold` = ? WHERE `phase_number` = ?");
+    foreach ($phaseConfig as $pNum => $cfg) {
+        $stmtUpdPhase->execute([$cfg['weight'], $cfg['threshold'], $pNum]);
+        outputMsg("Updated Phase {$pNum}: weight={$cfg['weight']}, threshold={$cfg['threshold']}", "info");
+    }
+
+    outputMsg("Database migration completed successfully! All tables, columns, and phase metrics are up to date.", "success");
 
 } catch (Exception $e) {
     outputMsg("Migration Error: " . $e->getMessage(), "info");

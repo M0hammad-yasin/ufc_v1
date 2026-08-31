@@ -42,3 +42,15 @@ SET
     a.checkpoint_pre_assessment = 1,
     a.checkpoint_pre_assessment_at = COALESCE(a.checkpoint_pre_assessment_at, pr.evaluated_at, a.updated_at, a.created_at)
 WHERE a.phase_1_completed_at IS NULL;
+
+-- 4. Add `weight` and `threshold` to `phases` table
+ALTER TABLE `phases`
+    ADD COLUMN IF NOT EXISTS `weight`    DECIMAL(5,3) NOT NULL DEFAULT 0.000 AFTER `question_count`,
+    ADD COLUMN IF NOT EXISTS `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00  AFTER `weight`;
+
+-- 5. Update Phase weights and threshold ratings
+UPDATE `phases` SET `weight` = 0.200, `threshold` = 6.50 WHERE `phase_number` = 1;
+UPDATE `phases` SET `weight` = 0.150, `threshold` = 6.00 WHERE `phase_number` = 2;
+UPDATE `phases` SET `weight` = 0.220, `threshold` = 6.50 WHERE `phase_number` = 3;
+UPDATE `phases` SET `weight` = 0.180, `threshold` = 6.50 WHERE `phase_number` = 4;
+

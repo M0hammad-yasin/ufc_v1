@@ -105,6 +105,30 @@ function ensureCheckReportColumns(PDO $pdo): void {
         if (!isset($existingCols['last_updated_by_user_id'])) {
             $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `last_updated_by_user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `checkpoint_final_bid_at`");
         }
+
+        // Check and migrate phases table (weight, threshold)
+        $phaseColsStmt = $pdo->query("SHOW COLUMNS FROM `phases`");
+        $existingPhaseCols = [];
+        while ($col = $phaseColsStmt->fetch(PDO::FETCH_ASSOC)) {
+            $existingPhaseCols[$col['Field']] = true;
+        }
+
+        $needsPhaseUpdate = false;
+        if (!isset($existingPhaseCols['weight'])) {
+            $pdo->exec("ALTER TABLE `phases` ADD COLUMN `weight` DECIMAL(5,3) NOT NULL DEFAULT 0.000 AFTER `question_count`");
+            $needsPhaseUpdate = true;
+        }
+        if (!isset($existingPhaseCols['threshold'])) {
+            $pdo->exec("ALTER TABLE `phases` ADD COLUMN `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00 AFTER `weight`");
+            $needsPhaseUpdate = true;
+        }
+
+        if ($needsPhaseUpdate) {
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.200, `threshold` = 6.50 WHERE `phase_number` = 1");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 6.00 WHERE `phase_number` = 2");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 6.50 WHERE `phase_number` = 3");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 6.50 WHERE `phase_number` = 4");
+        }
     } catch (Exception $e) {
         error_log("Column check/migration failed: " . $e->getMessage());
     }
