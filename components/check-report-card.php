@@ -80,8 +80,14 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                     <?= $sla['badge_html'] ?>
                 </div>
 
-                <!-- Primary Action Button -->
-                <div class="flex items-center gap-2">
+                <!-- Primary Action Buttons -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <a href="/ufc_v1/api/export_pdf.php?id=<?= (int)$assessment['id'] ?>" 
+                       class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-1.5"
+                       title="Download Executive PDF Report">
+                        <i class="fa-solid fa-file-pdf text-red-400 text-xs"></i>
+                        <span>Export PDF</span>
+                    </a>
                     <a href="/ufc_v1/assessment/question.php?id=<?= (int)$assessment['id'] ?>" 
                        class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-1.5">
                         <i class="fa-solid fa-play text-xs"></i>
