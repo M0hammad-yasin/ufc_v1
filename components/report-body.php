@@ -103,12 +103,13 @@ function getAssessmentReportData(int $assessmentId): array
     $phaseRejected = [];
 
     foreach ($rawResults as $r) {
-        $avgOn10   = ($r['score_possible'] > 0)
-            ? round(($r['score_earned'] / $r['score_possible']) * 10, 2)
-            : 0.0;
-        $threshold = (float)($r['threshold'] ?? 6.50);
-        $weight    = (float)($r['weight']    ?? 0.20);
+        $threshold = (float)($r['threshold'] ?? 65.00);
+        if ($threshold <= 10.0 && $threshold > 0) {
+            $threshold = $threshold * 10.0;
+        }
+        $weight    = (float)($r['weight'] ?? 0.20);
         $passed    = ($r['status'] === 'PASS');
+        $scorePct  = (float)$r['score_percent'];
 
         $phaseResults[] = [
             'id'             => (int)$r['phase_id'],
@@ -118,8 +119,8 @@ function getAssessmentReportData(int $assessmentId): array
             'threshold'      => $threshold,
             'score_earned'   => (float)$r['score_earned'],
             'score_possible' => (float)$r['score_possible'],
-            'score_percent'  => (float)$r['score_percent'],
-            'avg_score_on_10'=> $avgOn10,
+            'score_percent'  => $scorePct,
+            'avg_score_on_10'=> round($scorePct / 10, 2),
             'status'         => $r['status'],
             'passed'         => $passed,
             'red_count'      => (int)$r['red_count'],
@@ -129,7 +130,7 @@ function getAssessmentReportData(int $assessmentId): array
         ];
 
         if ($weight > 0) {
-            $weightedSum += $avgOn10 * $weight;
+            $weightedSum += $scorePct * $weight;
             $totalWeight += $weight;
         }
 
@@ -138,14 +139,14 @@ function getAssessmentReportData(int $assessmentId): array
         }
     }
 
-    $overallScore = ($totalWeight > 0) ? round($weightedSum / $totalWeight, 2) : 0.0;
+    $overallScore = ($totalWeight > 0) ? round($weightedSum / $totalWeight, 1) : 0.0;
 
-    // Verdict: any rejected phase → NO-GO; else score-based
+    // Verdict: any rejected phase → NO-GO; else score-based (100% scale)
     if (!empty($phaseRejected)) {
         $verdict = 'NO-GO';
-    } elseif ($overallScore >= 7.0) {
+    } elseif ($overallScore >= 70.0) {
         $verdict = 'GO';
-    } elseif ($overallScore >= 5.5) {
+    } elseif ($overallScore >= 55.0) {
         $verdict = 'HOLD';
     } else {
         $verdict = 'NO-GO';
@@ -232,23 +233,23 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
         default => 'bg-amber-950/60 border-[#c9a84c] text-[#c9a84c]',
     };
     $riskLabel = match (true) {
-        $overallScore >= 8.0 => 'Low Risk',
-        $overallScore >= 6.5 => 'Moderate Risk',
-        $overallScore >= 5.0 => 'High Risk',
-        default              => 'Critical Risk',
+        $overallScore >= 80.0 => 'Low Risk',
+        $overallScore >= 65.0 => 'Moderate Risk',
+        $overallScore >= 50.0 => 'High Risk',
+        default               => 'Critical Risk',
     };
     $riskColor = match (true) {
-        $overallScore >= 8.0 => RPT_GREEN,
-        $overallScore >= 6.5 => RPT_GOLD,
-        default              => RPT_RED,
+        $overallScore >= 80.0 => RPT_GREEN,
+        $overallScore >= 65.0 => RPT_GOLD,
+        default               => RPT_RED,
     };
 
     // ── ② Phase bar rows ─────────────────────────────────────────────────
     ob_start();
     foreach ($phaseResults as $r) {
-        $barWidth    = min(100, round(($r['avg_score_on_10'] / 10) * 100));
+        $barWidth    = min(100, round($r['score_percent']));
         $barColor    = $r['passed']
-            ? ($r['avg_score_on_10'] >= 8 ? RPT_GREEN : RPT_GOLD)
+            ? ($r['score_percent'] >= 80.0 ? RPT_GREEN : RPT_GOLD)
             : RPT_RED;
         $statusText  = $r['passed']
             ? 'PASS'
@@ -268,7 +269,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                     </span>
                     <span class="text-sm font-semibold text-slate-200"><?= htmlspecialchars($r['title']) ?></span>
                     <span class="text-[10px] font-mono text-slate-400 border border-slate-700 rounded px-1.5 py-0.5">
-                        Pass ≥ <?= number_format($r['threshold'], 2) ?> &middot; Wt <?= number_format($r['weight'] * 100, 1) ?>%
+                        Pass ≥ <?= number_format($r['threshold'], 1) ?>% &middot; Wt <?= number_format($r['weight'] * 100, 1) ?>%
                     </span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
@@ -278,7 +279,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                         </span>
                     <?php endif; ?>
                     <span class="text-sm font-bold" style="color:<?= $barColor ?>">
-                        <?= number_format($r['avg_score_on_10'], 2) ?><span class="text-slate-500 text-xs font-normal"> /10</span>
+                        <?= number_format($r['score_percent'], 1) ?>%
                     </span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-bold border <?= $statusClass ?>">
                         <?= $statusText ?>
@@ -310,17 +311,17 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
     // ── ③ Financial risk cards ────────────────────────────────────────────
     $finItems = [
         ['label' => 'Profit margin viability',
-         'value' => $overallScore >= 7 ? 'Protected' : ($overallScore >= 5.5 ? 'Marginal'    : 'At risk'),
-         'color' => $overallScore >= 7 ? RPT_GREEN   : ($overallScore >= 5.5 ? RPT_GOLD       : RPT_RED)],
+         'value' => $overallScore >= 70.0 ? 'Protected' : ($overallScore >= 55.0 ? 'Marginal'    : 'At risk'),
+         'color' => $overallScore >= 70.0 ? RPT_GREEN   : ($overallScore >= 55.0 ? RPT_GOLD       : RPT_RED)],
         ['label' => 'Overhead coverage',
-         'value' => $overallScore >= 6.5 ? 'Adequate'   : 'Insufficient',
-         'color' => $overallScore >= 6.5 ? RPT_GREEN    : RPT_RED],
+         'value' => $overallScore >= 65.0 ? 'Adequate'   : 'Insufficient',
+         'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED],
         ['label' => 'CEO compensation %',
-         'value' => $overallScore >= 6.5 ? 'Preserved'  : 'Compressed',
-         'color' => $overallScore >= 6.5 ? RPT_GREEN    : RPT_RED],
+         'value' => $overallScore >= 65.0 ? 'Preserved'  : 'Compressed',
+         'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED],
         ['label' => 'Savings retention',
-         'value' => $overallScore >= 7.5 ? 'Strong'     : ($overallScore >= 6 ? 'Moderate'   : 'Weak'),
-         'color' => $overallScore >= 7.5 ? RPT_GREEN    : ($overallScore >= 6 ? RPT_GOLD       : RPT_RED)],
+         'value' => $overallScore >= 75.0 ? 'Strong'     : ($overallScore >= 60.0 ? 'Moderate'   : 'Weak'),
+         'color' => $overallScore >= 75.0 ? RPT_GREEN    : ($overallScore >= 60.0 ? RPT_GOLD       : RPT_RED)],
     ];
 
     ob_start();
@@ -428,8 +429,8 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
             <!-- Overall score -->
             <div class="relative inline-flex flex-col items-center mb-5">
                 <span class="font-serif text-6xl sm:text-7xl font-bold leading-none"
-                      style="color:<?= $vColor ?>"><?= $overallFmt ?></span>
-                <span class="text-sm text-slate-400 mt-1">weighted score out of 10</span>
+                      style="color:<?= $vColor ?>"><?= $overallFmt ?>%</span>
+                <span class="text-sm text-slate-400 mt-1">weighted overall score (100% scale)</span>
                 <span class="text-sm font-semibold mt-0.5"
                       style="color:<?= $riskColor ?>"><?= $riskLabel ?></span>
             </div>

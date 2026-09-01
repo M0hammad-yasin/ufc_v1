@@ -16,7 +16,7 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
         'status_light' => 'GREEN',
         'trigger_fired' => 'NONE',
         'score' => 0.00,
-        'points_possible' => 0.00,
+        'points_possible' => 10.00,
         'require_explain' => false,
         'answer_value' => $rawAnswer,
         'na_justification' => $naJustification,
@@ -25,12 +25,12 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
 
     switch ($qType) {
         case 'YES_NO':
-            $result['points_possible'] = 2.00;
+            $result['points_possible'] = 10.00;
             $val = strtoupper(trim((string)$rawAnswer));
             $result['answer_value'] = $val;
 
             if ($val === 'YES') {
-                $result['score'] = 2.00;
+                $result['score'] = 10.00;
                 $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
             } else {
@@ -61,8 +61,8 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $result['answer_value'] = $val;
 
             if ($val === 'YES') {
-                $result['score'] = 2.00;
-                $result['points_possible'] = 2.00;
+                $result['score'] = 10.00;
+                $result['points_possible'] = 10.00;
                 $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
             } elseif ($val === 'NOT_APPLICABLE') {
@@ -75,7 +75,7 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             } else {
                 // NO
                 $result['score'] = 0.00;
-                $result['points_possible'] = 2.00;
+                $result['points_possible'] = 10.00;
                 $result['status_light'] = 'RED';
                 $result['require_explain'] = true;
                 if ($triggerType === 'STOP') {
@@ -120,15 +120,16 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
         case 'SINGLE_SELECT':
             $val = trim((string)$rawAnswer);
             $result['answer_value'] = $val;
-            $result['score'] = 0.00;
-            $result['points_possible'] = 0.00;
+            $result['points_possible'] = 10.00;
 
             // Check options for 1.1 and 2.2
             if ($qNum === '1.1') {
                 if (in_array($val, ['APPROVED_NO_PERMIT', 'APPROVED_PERMIT_ISSUED'], true)) {
+                    $result['score'] = 10.00;
                     $result['status_light'] = 'GREEN';
                     $result['trigger_fired'] = 'NONE';
                 } else {
+                    $result['score'] = 0.00;
                     $result['status_light'] = 'RED';
                     $result['trigger_fired'] = 'HOLD';
                     if ($val === 'NOT_STARTED') {
@@ -137,12 +138,25 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
                 }
             } elseif ($qNum === '2.2') {
                 if ($val === 'NOT_DETERMINED') {
+                    $result['score'] = 0.00;
                     $result['status_light'] = 'RED';
                     $result['trigger_fired'] = 'HOLD';
                     $result['require_explain'] = true;
                 } else {
+                    $result['score'] = 10.00;
                     $result['status_light'] = 'GREEN';
                     $result['trigger_fired'] = 'NONE';
+                }
+            } else {
+                // Generic single-select fallback
+                if ($val !== '' && $val !== 'NOT_STARTED' && $val !== 'NOT_DETERMINED') {
+                    $result['score'] = 10.00;
+                    $result['status_light'] = 'GREEN';
+                    $result['trigger_fired'] = 'NONE';
+                } else {
+                    $result['score'] = 0.00;
+                    $result['status_light'] = 'RED';
+                    $result['trigger_fired'] = ($triggerType !== 'NONE') ? $triggerType : 'HOLD';
                 }
             }
             break;
@@ -169,13 +183,13 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
                 }
             }
 
-            $result['points_possible'] = 2.00;
+            $result['points_possible'] = 10.00;
             if ($totalApplicable === 0) {
-                $result['score'] = 2.00;
+                $result['score'] = 10.00;
                 $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
             } else {
-                $result['score'] = round(2.00 * ($checkedApplicable / $totalApplicable), 2);
+                $result['score'] = round(10.00 * ($checkedApplicable / $totalApplicable), 2);
                 if ($checkedApplicable === $totalApplicable) {
                     $result['status_light'] = 'GREEN';
                     $result['trigger_fired'] = 'NONE';
@@ -388,61 +402,60 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
         $gateResult = 'ESCALATED';
         $verdictMessage = "Phase {$phaseNumber} raised an ESCALATION trigger and is routed to CEO/Counsel.";
     } else {
-        // Use the DB-configured threshold for this phase (default to 6.5 if not set)
-        $phaseThreshold = isset($phase['threshold']) ? (float)$phase['threshold'] : 6.50;
-        // Score average per question = score_earned / question_count; compare against threshold
-        $questionCount = count($applicable) ?: 1;
-        $avgScore = ($totalScorePossible > 0) ? ($totalScoreEarned / $questionCount) : 0.0;
-        // Normalise: points_possible per question is typically 2, so scale to 10
-        $avgScoreOn10 = ($totalScorePossible > 0) ? round(($totalScoreEarned / $totalScorePossible) * 10, 2) : 0.0;
+        // Use the DB-configured threshold for this phase (default to 65.0% if not set)
+        $phaseThreshold = isset($phase['threshold']) ? (float)$phase['threshold'] : 65.00;
+        // If threshold was stored in 0-10 format (e.g. 6.50), normalize it to 0-100% format (e.g. 65.00%)
+        if ($phaseThreshold <= 10.0 && $phaseThreshold > 0) {
+            $phaseThreshold = $phaseThreshold * 10.0;
+        }
 
-        // Evaluate specific Phase Gates using DB threshold
+        // Evaluate specific Phase Gates using 100% based DB threshold
         switch ($phaseNumber) {
             case 1:
                 $q10Score = isset($answersMap['1.10']) ? (float)$answersMap['1.10']['score'] : 0.0;
-                // PASS when: zero STOP triggers, <= 2 RED items, score avg >= threshold, Question 1.10 scored >= 5
-                if ($redCount <= 2 && $q10Score >= 5.0 && $avgScoreOn10 >= $phaseThreshold) {
+                // PASS when: zero STOP triggers, <= 2 RED items, Question 1.10 scored >= 5.0/10, and phase score% >= threshold%
+                if ($redCount <= 2 && $q10Score >= 5.0 && $scorePercent >= $phaseThreshold) {
                     $gateResult = 'PASS';
-                    $verdictMessage = "Phase 1 Passed. Document readiness confirmed. (Avg: {$avgScoreOn10}/10, Threshold: {$phaseThreshold})";
+                    $verdictMessage = "Phase 1 Passed. Document readiness confirmed. (Score: {$scorePercent}%, Threshold: {$phaseThreshold}%)";
                 } else {
                     $gateResult = 'FAIL_HOLD';
-                    $verdictMessage = "Phase 1 Failed. {$redCount} RED item(s), Avg Score {$avgScoreOn10}/10 (requires {$phaseThreshold}). Verdict: HOLD — PHASE 1 REQUIREMENTS OUTSTANDING.";
+                    $verdictMessage = "Phase 1 Failed. {$redCount} RED item(s), Score: {$scorePercent}% (requires {$phaseThreshold}%). Verdict: HOLD — PHASE 1 REQUIREMENTS OUTSTANDING.";
                 }
                 break;
 
             case 2:
                 $q29Val = isset($answersMap['2.9']) ? strtoupper(trim((string)$answersMap['2.9']['answer_value'])) : '';
-                // PASS when: zero STOP triggers, <= 2 RED items, score avg >= threshold, Question 2.9 answered YES
-                if ($redCount <= 2 && $q29Val === 'YES' && $avgScoreOn10 >= $phaseThreshold) {
+                // PASS when: zero STOP triggers, <= 2 RED items, Question 2.9 answered YES, and phase score% >= threshold%
+                if ($redCount <= 2 && $q29Val === 'YES' && $scorePercent >= $phaseThreshold) {
                     $gateResult = 'PASS';
-                    $verdictMessage = "Phase 2 Passed. Financial capacity and commitment confirmed. (Avg: {$avgScoreOn10}/10, Threshold: {$phaseThreshold})";
+                    $verdictMessage = "Phase 2 Passed. Financial capacity and commitment confirmed. (Score: {$scorePercent}%, Threshold: {$phaseThreshold}%)";
                 } else {
                     $gateResult = 'FAIL_HOLD';
-                    $verdictMessage = "Phase 2 Failed. Avg Score {$avgScoreOn10}/10 (requires {$phaseThreshold}). Verdict: HOLD — PHASE 2 REQUIREMENTS OUTSTANDING.";
+                    $verdictMessage = "Phase 2 Failed. Score: {$scorePercent}% (requires {$phaseThreshold}%). Verdict: HOLD — PHASE 2 REQUIREMENTS OUTSTANDING.";
                 }
                 break;
 
             case 3:
-                // PASS when: zero STOP triggers, zero ESCALATE triggers, <= 1 RED item, score avg >= threshold
-                if ($redCount <= 1 && $avgScoreOn10 >= $phaseThreshold) {
+                // PASS when: zero STOP triggers, zero ESCALATE triggers, <= 1 RED item, and phase score% >= threshold%
+                if ($redCount <= 1 && $scorePercent >= $phaseThreshold) {
                     $gateResult = 'PASS';
-                    $verdictMessage = "Phase 3 Passed. Property and legal standing confirmed. (Avg: {$avgScoreOn10}/10, Threshold: {$phaseThreshold})";
+                    $verdictMessage = "Phase 3 Passed. Property and legal standing confirmed. (Score: {$scorePercent}%, Threshold: {$phaseThreshold}%)";
                 } else {
                     $gateResult = 'FAIL_HOLD';
-                    $verdictMessage = "Phase 3 Failed. {$redCount} RED item(s), Avg Score {$avgScoreOn10}/10 (requires {$phaseThreshold}). Verdict: HOLD — PHASE 3 REQUIREMENTS OUTSTANDING.";
+                    $verdictMessage = "Phase 3 Failed. {$redCount} RED item(s), Score: {$scorePercent}% (requires {$phaseThreshold}%). Verdict: HOLD — PHASE 3 REQUIREMENTS OUTSTANDING.";
                 }
                 break;
 
             case 4:
                 $q48Score = isset($answersMap['4.8']) ? (float)$answersMap['4.8']['score'] : 0.0;
-                // PASS when: zero STOP triggers, Question 4.8 scored >= 4, and score avg >= threshold
-                if ($q48Score >= 4.0 && $avgScoreOn10 >= $phaseThreshold) {
+                // PASS when: zero STOP triggers, Question 4.8 scored >= 4.0/10, and phase score% >= threshold%
+                if ($q48Score >= 4.0 && $scorePercent >= $phaseThreshold) {
                     $gateResult = 'PASS';
-                    $verdictMessage = "Phase 4 Passed. All 4 phases passed. Verdict: PROCEED TO PROPOSAL. (Avg: {$avgScoreOn10}/10, Threshold: {$phaseThreshold})";
+                    $verdictMessage = "Phase 4 Passed. All 4 phases passed. Verdict: PROCEED TO PROPOSAL. (Score: {$scorePercent}%, Threshold: {$phaseThreshold}%)";
                 } else {
-                    if ($q48Score < 4.0 || $avgScoreOn10 < $phaseThreshold) {
+                    if ($q48Score < 4.0 || $scorePercent < $phaseThreshold) {
                         $gateResult = 'FAIL_STOP'; // Capacity failure
-                        $verdictMessage = "Phase 4 Failed on UFC Capacity / Target Margin criteria (Avg: {$avgScoreOn10}/10, Threshold: {$phaseThreshold}). Verdict: NOT A FIT.";
+                        $verdictMessage = "Phase 4 Failed on UFC Capacity / Target Margin criteria (Score: {$scorePercent}%, Threshold: {$phaseThreshold}%). Verdict: NOT A FIT.";
                     } else {
                         $gateResult = 'FAIL_HOLD';
                         $verdictMessage = "Phase 4 Failed on curable requirements. Verdict: HOLD — PHASE 4 REQUIREMENTS OUTSTANDING.";
@@ -489,13 +502,13 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
     return [
         'phase_number'     => $phaseNumber,
         'weight'           => isset($phase['weight']) ? (float)$phase['weight'] : null,
-        'threshold'        => isset($phase['threshold']) ? (float)$phase['threshold'] : null,
+        'threshold'        => $phaseThreshold,
         'status'           => $gateResult,
         'message'          => $verdictMessage,
         'score_earned'     => $totalScoreEarned,
         'score_possible'   => $totalScorePossible,
         'score_percent'    => $scorePercent,
-        'avg_score_on_10'  => $avgScoreOn10 ?? null,
+        'avg_score_on_10'  => round($scorePercent / 10, 2),
         'red_count'        => $redCount,
         'amber_count'      => $amberCount,
         'stop_count'       => $stopCount,

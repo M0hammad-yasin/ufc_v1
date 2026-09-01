@@ -124,10 +124,13 @@ function ensureCheckReportColumns(PDO $pdo): void {
         }
 
         if ($needsPhaseUpdate) {
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.200, `threshold` = 6.50 WHERE `phase_number` = 1");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 6.00 WHERE `phase_number` = 2");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 6.50 WHERE `phase_number` = 3");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 6.50 WHERE `phase_number` = 4");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.200, `threshold` = 65.00 WHERE `phase_number` = 1");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 60.00 WHERE `phase_number` = 2");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4");
+        } else {
+            // Normalize any existing legacy thresholds <= 10 to 100% based
+            $pdo->exec("UPDATE `phases` SET `threshold` = `threshold` * 10 WHERE `threshold` <= 10.0 AND `threshold` > 0");
         }
     } catch (Exception $e) {
         error_log("Column check/migration failed: " . $e->getMessage());

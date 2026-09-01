@@ -49,8 +49,8 @@ ALTER TABLE `phases`
     ADD COLUMN IF NOT EXISTS `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00  AFTER `weight`;
 
 -- 5. Update Phase weights and threshold ratings
-UPDATE `phases` SET `weight` = 0.200, `threshold` = 6.50 WHERE `phase_number` = 1;
-UPDATE `phases` SET `weight` = 0.150, `threshold` = 6.00 WHERE `phase_number` = 2;
-UPDATE `phases` SET `weight` = 0.220, `threshold` = 6.50 WHERE `phase_number` = 3;
-UPDATE `phases` SET `weight` = 0.180, `threshold` = 6.50 WHERE `phase_number` = 4;
+UPDATE `phases` SET `weight` = 0.200, `threshold` = 65.00 WHERE `phase_number` = 1;
+UPDATE `phases` SET `weight` = 0.150, `threshold` = 60.00 WHERE `phase_number` = 2;
+UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3;
+UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4;
 

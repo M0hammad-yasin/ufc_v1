@@ -68,10 +68,12 @@ foreach ($resultsRows as $r) {
             <div class="text-[10px] text-slate-400 mt-1 italic line-clamp-1">
                 "<?= htmlspecialchars($p['the_question']) ?>"
             </div>
-            <?php if (!empty($p['weight']) || !empty($p['threshold'])): ?>
+            <?php if (!empty($p['weight']) || !empty($p['threshold'])): 
+                $dispThresh = ((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold'];
+            ?>
                 <div class="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                     <span class="text-slate-300">Weight: <strong class="text-[#c9a84c]"><?= number_format((float)$p['weight'] * 100, 1) ?>%</strong></span>
-                    <span>Pass &ge; <strong class="text-emerald-400"><?= number_format((float)$p['threshold'], 2) ?></strong></span>
+                    <span>Pass &ge; <strong class="text-emerald-400"><?= number_format($dispThresh, 1) ?>%</strong></span>
                 </div>
             <?php endif; ?>
         </div>

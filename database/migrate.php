@@ -108,12 +108,12 @@ try {
         outputMsg("Added column: phases.threshold", "success");
     }
 
-    // Populate standard weights & thresholds for all 4 phases
+    // Populate standard weights & thresholds for all 4 phases (100% based)
     $phaseConfig = [
-        1 => ['weight' => 0.200, 'threshold' => 6.50],
-        2 => ['weight' => 0.150, 'threshold' => 6.00],
-        3 => ['weight' => 0.220, 'threshold' => 6.50],
-        4 => ['weight' => 0.180, 'threshold' => 6.50],
+        1 => ['weight' => 0.200, 'threshold' => 65.00],
+        2 => ['weight' => 0.150, 'threshold' => 60.00],
+        3 => ['weight' => 0.220, 'threshold' => 65.00],
+        4 => ['weight' => 0.180, 'threshold' => 65.00],
     ];
 
     $stmtUpdPhase = $pdo->prepare("UPDATE `phases` SET `weight` = ?, `threshold` = ? WHERE `phase_number` = ?");
