@@ -1,22 +1,26 @@
 <?php
+
 /**
  * United Five Construction - Reusable Helper Functions
  */
 
 require_once __DIR__ . '/../config/database.php';
 
-function sanitize(?string $str): string {
+function sanitize(?string $str): string
+{
     return htmlspecialchars(trim((string)$str), ENT_QUOTES, 'UTF-8');
 }
 
-function jsonResponse(array $data, int $statusCode = 200): void {
+function jsonResponse(array $data, int $statusCode = 200): void
+{
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data);
     exit;
 }
 
-function formatDate(?string $dateStr, string $format = 'M j, Y'): string {
+function formatDate(?string $dateStr, string $format = 'M j, Y'): string
+{
     if (!$dateStr) return 'N/A';
     try {
         $dt = new DateTime($dateStr);
@@ -26,7 +30,8 @@ function formatDate(?string $dateStr, string $format = 'M j, Y'): string {
     }
 }
 
-function setFlashMessage(string $type, string $message): void {
+function setFlashMessage(string $type, string $message): void
+{
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -36,7 +41,8 @@ function setFlashMessage(string $type, string $message): void {
     ];
 }
 
-function getFlashMessages(): array {
+function getFlashMessages(): array
+{
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -45,7 +51,8 @@ function getFlashMessages(): array {
     return $messages;
 }
 
-function logAudit(int $assessmentId, string $action, array $details = [], ?int $userId = null): void {
+function logAudit(int $assessmentId, string $action, array $details = [], ?int $userId = null): void
+{
     try {
         $pdo = getDbConnection();
         if ($userId === null && isset($_SESSION['user']['id'])) {
@@ -63,7 +70,8 @@ function logAudit(int $assessmentId, string $action, array $details = [], ?int $
     }
 }
 
-function ensureCheckReportColumns(PDO $pdo): void {
+function ensureCheckReportColumns(PDO $pdo): void
+{
     static $checked = false;
     if ($checked) return;
     $checked = true;
@@ -125,23 +133,22 @@ function ensureCheckReportColumns(PDO $pdo): void {
 
         if ($needsPhaseUpdate) {
             $pdo->exec("UPDATE `phases` SET `weight` = 0.200, `threshold` = 65.00 WHERE `phase_number` = 1");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 60.00 WHERE `phase_number` = 2");
+            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 65.00 WHERE `phase_number` = 2");
             $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3");
             $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4");
-        } else {
-            // Normalize any existing legacy thresholds <= 10 to 100% based
-            $pdo->exec("UPDATE `phases` SET `threshold` = `threshold` * 10 WHERE `threshold` <= 10.0 AND `threshold` > 0");
         }
     } catch (Exception $e) {
         error_log("Column check/migration failed: " . $e->getMessage());
     }
 }
 
-function generateAssessmentNumber(): string {
+function generateAssessmentNumber(): string
+{
     return 'UFC-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(2)));
 }
 
-function getAssessmentDetails(int $assessmentId): ?array {
+function getAssessmentDetails(int $assessmentId): ?array
+{
     $pdo = getDbConnection();
     ensureCheckReportColumns($pdo);
     $stmt = $pdo->prepare("
@@ -171,7 +178,8 @@ function getAssessmentDetails(int $assessmentId): ?array {
  * - Within Week 1 (Days 1 to 7 since Phase 1 pass): alert_level = 'YELLOW' (Yellow blinking notification)
  * - Week 2 & Beyond (Days 8 to 14+ since Phase 1 pass): alert_level = 'RED' (Red blinking urgent notification)
  */
-function getAssessmentSlaStatus(array $assessment): array {
+function getAssessmentSlaStatus(array $assessment): array
+{
     $phase1CompletedAt = $assessment['phase_1_completed_at'] ?? null;
     $proposalCompleted = (bool)($assessment['checkpoint_build_proposal'] ?? 0) || (bool)($assessment['checkpoint_final_bid'] ?? 0);
     $status = $assessment['status'] ?? 'IN_PROGRESS';
@@ -242,4 +250,3 @@ function getAssessmentSlaStatus(array $assessment): array {
         ];
     }
 }
-

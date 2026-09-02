@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction - Full Assessment Inspector & Audit Trail
  */
@@ -62,33 +63,160 @@ $sla = getAssessmentSlaStatus($assessment);
 $pageTitle = "Assessment #{$assessment['assessment_number']} — {$assessment['client_name']}";
 require_once __DIR__ . '/../components/header.php';
 $activePhaseNumber = (int)$assessment['current_phase'];
-require_once __DIR__ . '/../components/phase-nav.php';
+// require_once __DIR__ . '/../components/phase-nav.php';
+?>
+
+<?php
+$status = $assessment['status'];
+$badgeClass = 'bg-blue-950 text-blue-300 border-blue-600';
+if ($status === 'PROCEED_TO_PROPOSAL') $badgeClass = 'bg-emerald-950 text-emerald-300 border-emerald-500';
+if ($status === 'HOLD') $badgeClass = 'bg-amber-950 text-[#c9a84c] border-amber-500';
+if ($status === 'NOT_A_FIT') $badgeClass = 'bg-red-950 text-red-300 border-red-600';
+if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border-purple-500';
 ?>
 
 <div class="space-y-6">
+
+    <!-- ══ TOP ASSESSMENT DETAILS METADATA CARD ═════════════════════════════ -->
+    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl shadow-xl overflow-hidden">
+        <!-- Header Bar with Title, Status & Actions -->
+        <div class="p-5 sm:p-6 bg-gradient-to-r from-[#0d1f3c] via-[#122849] to-[#0a172c] border-b border-[#1e3e68] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono text-xs font-bold px-2.5 py-1 rounded bg-[#1a3a5c] text-[#c9a84c] border border-[#234d7a]">
+                        <?= htmlspecialchars($assessment['assessment_number']) ?>
+                    </span>
+                    <span class="text-xs text-slate-400">Created: <?= formatDate($assessment['created_at']) ?></span>
+                </div>
+                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-white mt-1.5 flex items-center gap-2.5">
+                    <i class="fa-solid fa-circle-info text-[#c9a84c] text-xl"></i>
+                    <span>Assessment Details</span>
+                </h1>
+            </div>
+
+            <!-- Status & Action Buttons -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <span class="px-3.5 py-1.5 rounded-full text-xs font-bold border tracking-wider uppercase <?= $badgeClass ?>">
+                    <?= str_replace('_', ' ', $status) ?>
+                </span>
+
+                <a href="/ufc_v1/assessment/edit.php?id=<?= $assessmentId ?>" 
+                   class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-1.5">
+                    <i class="fa-regular fa-pen-to-square text-[#c9a84c]"></i>
+                    <span>Edit Assessment</span>
+                </a>
+
+                <a href="/ufc_v1/assessment/preview-pdf.php?id=<?= $assessmentId ?>" 
+                   target="_blank"
+                   class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-1.5">
+                    <i class="fa-regular fa-eye text-blue-400"></i>
+                    <span>View PDF Report</span>
+                </a>
+
+                <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>" 
+                   class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-pdf text-xs"></i>
+                    <span>Download PDF</span>
+                </a>
+
+                <?php if ($status !== 'NOT_A_FIT'): ?>
+                    <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded shadow transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-play text-xs"></i>
+                        <span>Runner</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if ($status === 'HOLD'): ?>
+                    <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $assessment['current_phase'] ?>"
+                        target="_blank"
+                        class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-amber-300 border border-amber-600/50 text-xs font-semibold rounded">
+                        Requirements Letter
+                    </a>
+                <?php elseif ($status === 'NOT_A_FIT'): ?>
+                    <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>"
+                        target="_blank"
+                        class="px-3.5 py-2 bg-red-950 hover:bg-red-900 text-red-300 border border-red-600/50 text-xs font-semibold rounded">
+                        Decline Letter
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Metadata Grid -->
+        <div class="p-5 sm:p-6 bg-[#081528]/50">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5 text-xs">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Name</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-slate-200 border border-[#1e3e68] text-sm">
+                        <?= htmlspecialchars($assessment['client_name'] ?: '—') ?>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Name</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-white border border-[#1e3e68] flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-building text-[#c9a84c]"></i>
+                        <span><?= htmlspecialchars($assessment['project_name'] ?: '—') ?></span>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contact</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-slate-200 border border-[#1e3e68]">
+                        <?= htmlspecialchars($assessment['client_phone'] ?: '—') ?>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-slate-200 border border-[#1e3e68]">
+                        <?= htmlspecialchars($assessment['client_email'] ?: '—') ?>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Created by</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-slate-200 border border-[#1e3e68]">
+                        <?= htmlspecialchars($assessment['assessor_name'] ?: 'System') ?>
+                        <span class="text-slate-400 text-[10px] block font-normal mt-0.5"><?= formatDate($assessment['created_at'], 'M j, Y H:i') ?></span>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Last Update</p>
+                    <div class="bg-[#0d1f3c] rounded-lg p-3 font-semibold text-slate-200 border border-[#1e3e68]">
+                        <?= htmlspecialchars($assessment['last_updated_by_name'] ?? $assessment['assessor_name'] ?? '—') ?>
+                        <span class="text-slate-400 text-[10px] block font-normal mt-0.5"><?= formatDate($assessment['updated_at'], 'M j, Y H:i') ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- View Switcher Tabs -->
     <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-1.5 flex flex-wrap items-center gap-2 shadow-md">
-        <button type="button" 
-                id="tab-btn-check-report" 
-                onclick="switchViewTab('check-report')"
-                class="view-tab-btn px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 bg-[#c9a84c] text-[#060f1e] shadow">
+        <button type="button"
+            id="tab-btn-check-report"
+            onclick="switchViewTab('check-report')"
+            class="view-tab-btn px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 bg-[#c9a84c] text-[#060f1e] shadow">
             <i class="fa-solid fa-clipboard-check text-xs"></i>
             <span>Check Report &amp; Milestones</span>
             <?= $sla['dot_html'] ?>
         </button>
 
-        <button type="button" 
-                id="tab-btn-phases" 
-                onclick="switchViewTab('phases')"
-                class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
+        <button type="button"
+            id="tab-btn-phases"
+            onclick="switchViewTab('phases')"
+            class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
             <i class="fa-solid fa-list-ol text-xs"></i>
             <span>Four-Phase Qualification Review</span>
         </button>
 
-        <button type="button" 
-                id="tab-btn-audit" 
-                onclick="switchViewTab('audit')"
-                class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
+        <button type="button"
+            id="tab-btn-audit"
+            onclick="switchViewTab('audit')"
+            class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
             <i class="fa-solid fa-timeline text-xs"></i>
             <span>Audit History &amp; Overrides</span>
         </button>
@@ -97,185 +225,114 @@ require_once __DIR__ . '/../components/phase-nav.php';
     <!-- ══ TAB CONTENT 1: CHECK REPORT & MILESTONES ═════════════════════════ -->
     <div id="tab-content-check-report" class="view-tab-pane space-y-6">
         <?php require __DIR__ . '/../components/check-report-card.php'; ?>
-
-        <!-- Quick Summary Card -->
-        <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-6 shadow-xl">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-mono text-xs font-bold px-2.5 py-1 rounded bg-[#1a3a5c] text-[#c9a84c] border border-[#234d7a]">
-                            <?= htmlspecialchars($assessment['assessment_number']) ?>
-                        </span>
-                        <span class="text-xs text-slate-400">Created: <?= formatDate($assessment['created_at']) ?></span>
-                    </div>
-                    
-                    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-white mt-2">
-                        <?= htmlspecialchars($assessment['client_name']) ?>
-                    </h1>
-                    
-                    <p class="text-sm text-slate-300 mt-1">
-                        <?= htmlspecialchars($assessment['project_address']) ?>
-                    </p>
-
-                    <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-slate-400">
-                        <span>Email: <strong class="text-slate-200"><?= htmlspecialchars($assessment['client_email']) ?></strong></span>
-                        <span>Type: <strong class="text-slate-200"><?= htmlspecialchars($assessment['project_type'] ?? 'N/A') ?></strong></span>
-                        <span>Budget: <strong class="text-[#c9a84c]"><?= $assessment['estimated_budget'] ? '$' . number_format($assessment['estimated_budget'], 2) : 'Unstated' ?></strong></span>
-                    </div>
-                </div>
-
-                <!-- Current Status & Actions -->
-                <div class="flex flex-col items-start lg:items-end gap-3">
-                    <div>
-                        <?php 
-                            $status = $assessment['status'];
-                            $badgeClass = 'bg-blue-950 text-blue-300 border-blue-600';
-                            if ($status === 'PROCEED_TO_PROPOSAL') $badgeClass = 'bg-emerald-950 text-emerald-300 border-emerald-500';
-                            if ($status === 'HOLD') $badgeClass = 'bg-amber-950 text-[#c9a84c] border-amber-500';
-                            if ($status === 'NOT_A_FIT') $badgeClass = 'bg-red-950 text-red-300 border-red-500';
-                            if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border-purple-500';
-                        ?>
-                        <span class="px-4 py-1.5 rounded-full text-xs font-bold border tracking-wider uppercase <?= $badgeClass ?>">
-                            <?= str_replace('_', ' ', $status) ?>
-                        </span>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <?php if ($status !== 'NOT_A_FIT'): ?>
-                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>" 
-                               class="px-5 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-1.5">
-                                <span>Open Assessment Runner</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                                </svg>
-                            </a>
-                        <?php endif; ?>
-
-                        <?php if ($status === 'HOLD'): ?>
-                            <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $assessment['current_phase'] ?>" 
-                               target="_blank"
-                               class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-amber-300 border border-amber-600/50 text-xs font-semibold rounded">
-                                Requirements Letter
-                            </a>
-                        <?php elseif ($status === 'NOT_A_FIT'): ?>
-                            <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>" 
-                               target="_blank"
-                               class="px-4 py-2 bg-red-950 hover:bg-red-900 text-red-300 border border-red-600/50 text-xs font-semibold rounded">
-                                Decline Letter
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- ══ TAB CONTENT 2: 4 PHASES QUALIFICATION REVIEW ═════════════════════ -->
     <div id="tab-content-phases" class="view-tab-pane space-y-4 hidden">
         <h2 class="font-serif text-xl font-bold text-slate-100">Four-Phase Qualification Review</h2>
 
-        <?php foreach ($phases as $p): 
+        <?php foreach ($phases as $p):
             $pId = (int)$p['id'];
             $pNum = (int)$p['phase_number'];
             $pRes = $phaseResults[$pId] ?? null;
             $unlocked = isPhaseUnlocked($assessmentId, $pNum);
             $phaseQuestions = getApplicableQuestionsForPhase($assessmentId, $pNum);
         ?>
-        <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl overflow-hidden shadow-md">
-            <div class="p-4 bg-[#0a172c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1e3e68]">
-                <div class="flex items-center gap-3">
-                    <span class="w-7 h-7 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold text-xs flex items-center justify-center border border-[#234d7a]">
-                        P<?= $pNum ?>
-                    </span>
-                    <div>
-                        <h3 class="font-bold text-sm text-slate-100"><?= htmlspecialchars($p['title']) ?></h3>
-                        <p class="text-[11px] text-slate-400 italic">"<?= htmlspecialchars($p['the_question']) ?>"</p>
+            <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl overflow-hidden shadow-md">
+                <div class="p-4 bg-[#0a172c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1e3e68]">
+                    <div class="flex items-center gap-3">
+                        <span class="w-7 h-7 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold text-xs flex items-center justify-center border border-[#234d7a]">
+                            P<?= $pNum ?>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-100"><?= htmlspecialchars($p['title']) ?></h3>
+                            <p class="text-[11px] text-slate-400 italic">"<?= htmlspecialchars($p['the_question']) ?>"</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <?php
+                        $dispThresh = (!empty($p['threshold'])) ? (((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold']) : null;
+                        ?>
+                        <?php if ($pRes): ?>
+                            <span class="text-xs font-semibold text-slate-300">Score: <?= $pRes['score_earned'] ?>/<?= $pRes['score_possible'] ?> (<?= $pRes['score_percent'] ?>%)</span>
+                            <?php if ($dispThresh !== null): ?>
+                                <span class="text-[10px] font-mono text-slate-400 border border-slate-700 rounded px-1.5 py-0.5">
+                                    Pass ≥ <?= number_format($dispThresh, 1) ?>% · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
+                                </span>
+                            <?php endif; ?>
+                            <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border <?= ($pRes['status'] === 'PASS') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : 'bg-amber-950 text-[#c9a84c] border-amber-500' ?>">
+                                <?= $pRes['status'] ?>
+                            </span>
+                        <?php else: ?>
+                            <?php if ($dispThresh !== null): ?>
+                                <span class="text-[10px] font-mono text-slate-500 border border-slate-700 rounded px-1.5 py-0.5">
+                                    Pass ≥ <?= number_format($dispThresh, 1) ?>% · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
+                                </span>
+                            <?php endif; ?>
+                            <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border bg-slate-800 text-slate-400 border-slate-700">
+                                <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <?php if ($unlocked): ?>
+                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $pNum . '.1' ?>"
+                                class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-[#c9a84c] text-xs font-semibold rounded border border-[#1e3e68]">
+                                Review Phase
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <?php 
-                        $dispThresh = (!empty($p['threshold'])) ? (((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold']) : null;
-                    ?>
-                    <?php if ($pRes): ?>
-                        <span class="text-xs font-semibold text-slate-300">Score: <?= $pRes['score_earned'] ?>/<?= $pRes['score_possible'] ?> (<?= $pRes['score_percent'] ?>%)</span>
-                        <?php if ($dispThresh !== null): ?>
-                            <span class="text-[10px] font-mono text-slate-400 border border-slate-700 rounded px-1.5 py-0.5">
-                                Pass ≥ <?= number_format($dispThresh, 1) ?>% · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
-                            </span>
-                        <?php endif; ?>
-                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border <?= ($pRes['status'] === 'PASS') ? 'bg-emerald-950 text-emerald-300 border-emerald-500' : 'bg-amber-950 text-[#c9a84c] border-amber-500' ?>">
-                            <?= $pRes['status'] ?>
-                        </span>
-                    <?php else: ?>
-                        <?php if ($dispThresh !== null): ?>
-                            <span class="text-[10px] font-mono text-slate-500 border border-slate-700 rounded px-1.5 py-0.5">
-                                Pass ≥ <?= number_format($dispThresh, 1) ?>% · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%
-                            </span>
-                        <?php endif; ?>
-                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border bg-slate-800 text-slate-400 border-slate-700">
-                            <?= $unlocked ? 'UNLOCKED' : 'LOCKED' ?>
-                        </span>
-                    <?php endif; ?>
-
-                    <?php if ($unlocked): ?>
-                        <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $pNum . '.1' ?>" 
-                           class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-[#c9a84c] text-xs font-semibold rounded border border-[#1e3e68]">
-                            Review Phase
-                        </a>
-                    <?php endif; ?>
-                </div>
+                <!-- Questions Breakdown -->
+                <?php if ($unlocked && !empty($phaseQuestions)): ?>
+                    <div class="p-4 overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-[#1e3e68]">
+                                    <th class="py-2 px-2">Q#</th>
+                                    <th class="py-2 px-2">Question</th>
+                                    <th class="py-2 px-2">Owner</th>
+                                    <th class="py-2 px-2">Answer</th>
+                                    <th class="py-2 px-2">Status</th>
+                                    <th class="py-2 px-2">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#1e3e68]/50">
+                                <?php foreach ($phaseQuestions as $q):
+                                    $ans = $answersMap[$q['question_number']] ?? null;
+                                ?>
+                                    <tr class="hover:bg-[#1a3a5c]/20">
+                                        <td class="py-2 px-2 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
+                                        <td class="py-2 px-2 text-slate-200 max-w-sm"><?= htmlspecialchars($q['question_text']) ?></td>
+                                        <td class="py-2 px-2 text-slate-400"><?= $q['owner'] ?></td>
+                                        <td class="py-2 px-2 font-semibold text-slate-200">
+                                            <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
+                                            <?php if (isset($evidenceFilesMap[$q['id']])):
+                                                $ef = $evidenceFilesMap[$q['id']];
+                                            ?>
+                                                <a href="/ufc_v1/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>"
+                                                    target="_blank"
+                                                    title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                                    class="ml-2 text-[#c9a84c] hover:text-white inline-flex items-center gap-1 text-[11px] font-normal underline">
+                                                    <i class="fa-solid fa-paperclip text-xs"></i>
+                                                    <span>Document</span>
+                                                </a>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-2 px-2">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= ($ans['status_light'] ?? '') === 'GREEN' ? 'badge-green' : (($ans['status_light'] ?? '') === 'AMBER' ? 'badge-amber' : (($ans['status_light'] ?? '') === 'RED' ? 'badge-red' : 'badge-neutral')) ?>">
+                                                <?= $ans['status_light'] ?? 'PENDING' ?>
+                                            </span>
+                                        </td>
+                                        <td class="py-2 px-2 text-slate-300"><?= $ans ? "{$ans['score']}/{$ans['points_possible']}" : '—' ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
-
-            <!-- Questions Breakdown -->
-            <?php if ($unlocked && !empty($phaseQuestions)): ?>
-                <div class="p-4 overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead>
-                            <tr class="text-slate-400 border-b border-[#1e3e68]">
-                                <th class="py-2 px-2">Q#</th>
-                                <th class="py-2 px-2">Question</th>
-                                <th class="py-2 px-2">Owner</th>
-                                <th class="py-2 px-2">Answer</th>
-                                <th class="py-2 px-2">Status</th>
-                                <th class="py-2 px-2">Score</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#1e3e68]/50">
-                            <?php foreach ($phaseQuestions as $q): 
-                                $ans = $answersMap[$q['question_number']] ?? null;
-                            ?>
-                            <tr class="hover:bg-[#1a3a5c]/20">
-                                <td class="py-2 px-2 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
-                                <td class="py-2 px-2 text-slate-200 max-w-sm"><?= htmlspecialchars($q['question_text']) ?></td>
-                                <td class="py-2 px-2 text-slate-400"><?= $q['owner'] ?></td>
-                                <td class="py-2 px-2 font-semibold text-slate-200">
-                                    <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
-                                    <?php if (isset($evidenceFilesMap[$q['id']])): 
-                                        $ef = $evidenceFilesMap[$q['id']];
-                                    ?>
-                                        <a href="/ufc_v1/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>" 
-                                           target="_blank" 
-                                           title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>" 
-                                           class="ml-2 text-[#c9a84c] hover:text-white inline-flex items-center gap-1 text-[11px] font-normal underline">
-                                            <i class="fa-solid fa-paperclip text-xs"></i>
-                                            <span>Document</span>
-                                        </a>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="py-2 px-2">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= ($ans['status_light'] ?? '') === 'GREEN' ? 'badge-green' : (($ans['status_light'] ?? '') === 'AMBER' ? 'badge-amber' : (($ans['status_light'] ?? '') === 'RED' ? 'badge-red' : 'badge-neutral')) ?>">
-                                        <?= $ans['status_light'] ?? 'PENDING' ?>
-                                    </span>
-                                </td>
-                                <td class="py-2 px-2 text-slate-300"><?= $ans ? "{$ans['score']}/{$ans['points_possible']}" : '—' ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
         <?php endforeach; ?>
     </div>
 
@@ -322,7 +379,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                             Permanent Written Justification <span class="text-red-400">*</span>
                         </label>
                         <textarea name="justification" rows="2" required placeholder="State legal rationale, executive waiver, or mitigation terms..."
-                                  class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 focus:border-[#c9a84c]"></textarea>
+                            class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 focus:border-[#c9a84c]"></textarea>
                     </div>
 
                     <div class="sm:col-span-3 text-right">
@@ -354,7 +411,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
             <h3 class="font-serif font-bold text-lg text-slate-100 mb-4">
                 Assessment Change Audit History
             </h3>
-            
+
             <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
                 <?php if (empty($auditHistory)): ?>
                     <div class="text-xs text-slate-400 italic">No history records yet.</div>
@@ -378,37 +435,36 @@ require_once __DIR__ . '/../components/phase-nav.php';
 </div>
 
 <script>
-function switchViewTab(tabKey) {
-    const tabs = ['check-report', 'phases', 'audit'];
-    tabs.forEach(t => {
-        const pane = document.getElementById(`tab-content-${t}`);
-        const btn = document.getElementById(`tab-btn-${t}`);
-        if (pane) {
-            pane.classList.toggle('hidden', t !== tabKey);
-        }
-        if (btn) {
-            if (t === tabKey) {
-                btn.className = 'view-tab-btn px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 bg-[#c9a84c] text-[#060f1e] shadow';
-            } else {
-                btn.className = 'view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]';
+    function switchViewTab(tabKey) {
+        const tabs = ['check-report', 'phases', 'audit'];
+        tabs.forEach(t => {
+            const pane = document.getElementById(`tab-content-${t}`);
+            const btn = document.getElementById(`tab-btn-${t}`);
+            if (pane) {
+                pane.classList.toggle('hidden', t !== tabKey);
             }
-        }
-    });
+            if (btn) {
+                if (t === tabKey) {
+                    btn.className = 'view-tab-btn px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 bg-[#c9a84c] text-[#060f1e] shadow';
+                } else {
+                    btn.className = 'view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]';
+                }
+            }
+        });
 
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tabKey);
-    window.history.replaceState({}, '', url.toString());
-}
-
-// Support auto-open from query param ?tab=phases or ?tab=audit
-(function() {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
-    if (tabParam && (tabParam === 'phases' || tabParam === 'audit' || tabParam === 'check-report')) {
-        switchViewTab(tabParam);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tabKey);
+        window.history.replaceState({}, '', url.toString());
     }
-})();
+
+    // Support auto-open from query param ?tab=phases or ?tab=audit
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && (tabParam === 'phases' || tabParam === 'audit' || tabParam === 'check-report')) {
+            switchViewTab(tabParam);
+        }
+    })();
 </script>
 
 <?php require_once __DIR__ . '/../components/footer.php'; ?>
-

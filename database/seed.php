@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction, Inc.
  * Database Seeder — All 4 Phases, 37 Questions, and Tiers (authoritative specification)
@@ -63,7 +64,7 @@ try {
             'Phase 1 returns PASS. Until then this phase is locked and no question in it is displayed.',
             9,
             0.150,
-            60.00,
+            65.00,
             'Unlocks only when Phase 1 passes. This is the phase that separates a buyer from a shopper. A client who will not document funding, and will not sign a preconstruction services agreement, is not going to award a contract. Every question is client-facing except where marked.'
         ],
         [
@@ -682,7 +683,6 @@ try {
     }
 
     echo "-> Successfully seeded all 37 authoritative questions and their options.\n";
-
 } catch (Exception $e) {
     die("Database Seeding Failed: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n");
 }

@@ -98,57 +98,12 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
         </div>
     </div>
 
-    <!-- Metadata Details Grid (Who Created, Who Last Updated, Status, Timestamps) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#1e3e68] bg-[#0d1f3c] border-b border-[#1e3e68] text-xs">
-        <!-- 1. Created By -->
-        <div class="p-4 sm:p-5">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-user-plus text-[#c9a84c]"></i>
-                <span>Created By</span>
-            </div>
-            <div class="font-bold text-sm text-slate-100"><?= htmlspecialchars($creatorName) ?></div>
-            <div class="text-slate-400 text-[11px] mt-0.5"><?= formatDate($assessment['created_at'], 'M j, Y H:i') ?></div>
-        </div>
-
-        <!-- 2. Last Updated By -->
-        <div class="p-4 sm:p-5">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-clock-rotate-left text-blue-400"></i>
-                <span>Last Updated By</span>
-            </div>
-            <div id="meta-last-updater-name" class="font-bold text-sm text-slate-100"><?= htmlspecialchars($updaterName) ?></div>
-            <div id="meta-last-updated-at" class="text-slate-400 text-[11px] mt-0.5"><?= formatDate($assessment['updated_at'], 'M j, Y H:i') ?></div>
-        </div>
-
-        <!-- 3. Current Phase / Status -->
-        <div class="p-4 sm:p-5">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-                <span>Gate Progress</span>
-            </div>
-            <div class="font-bold text-sm text-slate-100">Phase <?= (int)$assessment['current_phase'] ?> / Gate <?= $statusLabel ?></div>
-            <div class="text-slate-400 text-[11px] mt-0.5">
-                <?php if ($assessment['phase_1_completed_at']): ?>
-                    P1 Passed: <?= formatDate($assessment['phase_1_completed_at'], 'M j, Y') ?>
-                <?php else: ?>
-                    Phase 1 In Progress
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- 4. SLA Timeline Monitor -->
-        <div class="p-4 sm:p-5">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-stopwatch text-amber-400"></i>
-                <span>Phase 1 - 2 Week SLA</span>
-            </div>
-            <div class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                <span id="sla-label"><?= htmlspecialchars($sla['label']) ?></span>
-            </div>
-            <div class="text-slate-400 text-[11px] mt-0.5">
-                14-day proposal readiness cycle
-            </div>
-        </div>
+    <!-- Four-Phase Navigation / Gate Progress Grid -->
+    <div class="p-4 sm:p-5 bg-[#0a172c]/70 border-b border-[#1e3e68]">
+        <?php 
+        $activePhaseNumber = (int)($assessment['current_phase'] ?? 1);
+        require __DIR__ . '/phase-nav.php'; 
+        ?>
     </div>
 
     <!-- 3 Milestone Checkboxes Section -->

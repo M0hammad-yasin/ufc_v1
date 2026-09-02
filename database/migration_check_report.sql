@@ -50,7 +50,7 @@ ALTER TABLE `phases`
 
 -- 5. Update Phase weights and threshold ratings
 UPDATE `phases` SET `weight` = 0.200, `threshold` = 65.00 WHERE `phase_number` = 1;
-UPDATE `phases` SET `weight` = 0.150, `threshold` = 60.00 WHERE `phase_number` = 2;
+UPDATE `phases` SET `weight` = 0.150, `threshold` = 65.00 WHERE `phase_number` = 2;
 UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3;
 UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4;
 

@@ -23,7 +23,7 @@ foreach ($resultsRows as $r) {
 }
 ?>
 
-<div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 mb-6 shadow-md no-print">
+<div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md no-print">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <?php foreach ($phases as $p): 
             $pNum = (int)$p['phase_number'];
