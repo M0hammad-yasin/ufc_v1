@@ -180,16 +180,22 @@ function getAssessmentDetails(int $assessmentId): ?array
  */
 function getAssessmentSlaStatus(array $assessment): array
 {
-    $phase1CompletedAt = $assessment['phase_1_completed_at'] ?? null;
-    $proposalCompleted = (bool)($assessment['checkpoint_build_proposal'] ?? 0) || (bool)($assessment['checkpoint_final_bid'] ?? 0);
-    $status = $assessment['status'] ?? 'IN_PROGRESS';
+    $phase1CompletedAt     = $assessment['phase_1_completed_at'] ?? null;
+    $status                = $assessment['status'] ?? 'IN_PROGRESS';
+    $chkAssessment         = (bool)($assessment['checkpoint_pre_assessment'] ?? 0);
+    $chkWalkThrough        = (bool)($assessment['checkpoint_client_meetup'] ?? 0);
+    $chkProposalSubmission  = (bool)($assessment['checkpoint_build_proposal'] ?? 0);
+    $chkFinalBid           = (bool)($assessment['checkpoint_final_bid'] ?? 0);
+    
+    $all4Checked          = $chkAssessment && $chkWalkThrough && $chkProposalSubmission && $chkFinalBid;
+    $isActionStatusSet     = in_array($status, ['PROCEED_TO_PROPOSAL', 'HOLD', 'NOT_A_FIT'], true);
 
     // Check if Phase 1 was completed but phase_1_completed_at wasn't stamped yet
     if (!$phase1CompletedAt && isset($assessment['current_phase']) && (int)$assessment['current_phase'] > 1) {
         $phase1CompletedAt = $assessment['updated_at'] ?? $assessment['created_at'] ?? date('Y-m-d H:i:s');
     }
 
-    if (!$phase1CompletedAt || $status === 'NOT_A_FIT') {
+    if (!$phase1CompletedAt) {
         return [
             'is_active'       => false,
             'alert_level'     => 'NONE',
@@ -201,15 +207,28 @@ function getAssessmentSlaStatus(array $assessment): array
         ];
     }
 
-    if ($proposalCompleted || $status === 'PROCEED_TO_PROPOSAL') {
+    // Timer stops ONLY when all 4 checkboxes are checked OR an action status is explicitly set
+    if ($all4Checked || $isActionStatusSet) {
+        $badgeText = match ($status) {
+            'PROCEED_TO_PROPOSAL' => 'Assessment Completed',
+            'HOLD'                => 'Assessment Aborted',
+            'NOT_A_FIT'           => 'Assessment Rejected',
+            default               => 'Milestones Met',
+        };
+        $badgeClass = match ($status) {
+            'PROCEED_TO_PROPOSAL' => 'bg-emerald-950/90 text-emerald-300 border-emerald-500',
+            'HOLD'                => 'bg-amber-950/90 text-amber-300 border-amber-500',
+            'NOT_A_FIT'           => 'bg-red-950/90 text-red-300 border-red-500',
+            default               => 'bg-emerald-950/90 text-emerald-300 border-emerald-500',
+        };
         return [
             'is_active'       => false,
             'alert_level'     => 'COMPLETED',
             'days_elapsed'    => 0,
             'days_remaining'  => 0,
-            'label'           => 'Proposal Built / Met',
-            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500 shadow-sm"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Proposal Ready</span>',
-            'dot_html'        => '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="Proposal Milestone Completed"></span>',
+            'label'           => $badgeText . ' · Timer Stopped',
+            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold ' . $badgeClass . ' shadow-sm"><span class="w-2 h-2 rounded-full bg-current"></span> ' . $badgeText . ' (Timer Stopped)</span>',
+            'dot_html'        => '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm" title="' . $badgeText . '"></span>',
         ];
     }
 
