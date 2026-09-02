@@ -133,7 +133,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                 }
 
                 <?php if ($isWebPreview): ?>.pdf-preview-sheet {
-                    max-width: 860px;
+                    width: 850px;
                     margin: 0 auto;
                     background: #ffffff;
                     padding: 24pt;
@@ -141,6 +141,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     border-radius: 8px;
                     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
                     color: #1e293b;
+                    box-sizing: border-box;
                 }
 
                 @media print {
@@ -153,6 +154,8 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     }
 
                     .pdf-preview-sheet {
+                        width: 100% !important;
+                        min-width: 100% !important;
                         max-width: 100% !important;
                         margin: 0 !important;
                         padding: 0 !important;
