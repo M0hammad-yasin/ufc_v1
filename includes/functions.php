@@ -137,6 +137,24 @@ function ensureCheckReportColumns(PDO $pdo): void
             $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3");
             $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4");
         }
+
+        // Create email_logs table for audit tracking
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `email_logs` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `assessment_id` INT UNSIGNED NULL DEFAULT NULL,
+                `recipient_email` VARCHAR(191) NOT NULL,
+                `subject` VARCHAR(255) NOT NULL,
+                `email_type` VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+                `status` VARCHAR(20) NOT NULL DEFAULT 'SENT',
+                `error_message` TEXT NULL DEFAULT NULL,
+                `sent_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`assessment_id`),
+                INDEX (`recipient_email`),
+                INDEX (`email_type`),
+                INDEX (`sent_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
     } catch (Exception $e) {
         error_log("Column check/migration failed: " . $e->getMessage());
     }
