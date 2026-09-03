@@ -683,6 +683,7 @@ try {
     }
 
     echo "-> Successfully seeded all 37 authoritative questions and their options.\n";
+    echo "\n=== ALL STATIC FRAMEWORK DATA SEEDED SUCCESSFULLY! ===\n";
 } catch (Exception $e) {
     die("Database Seeding Failed: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n");
 }

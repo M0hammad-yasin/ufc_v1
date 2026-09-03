@@ -4,6 +4,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `email_logs`;
 DROP TABLE IF EXISTS `assessment_history`;
 DROP TABLE IF EXISTS `follow_up_tasks`;
 DROP TABLE IF EXISTS `ceo_overrides`;
@@ -241,4 +242,21 @@ CREATE TABLE `assessment_history` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. Email Communication & Audit Logs Table
+CREATE TABLE `email_logs` (
+    `id`              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `assessment_id`   INT UNSIGNED NULL DEFAULT NULL,
+    `recipient_email` VARCHAR(191) NOT NULL,
+    `subject`         VARCHAR(255) NOT NULL,
+    `email_type`      VARCHAR(50)  NOT NULL DEFAULT 'GENERAL',
+    `status`          VARCHAR(20)  NOT NULL DEFAULT 'SENT',
+    `error_message`   TEXT         NULL DEFAULT NULL,
+    `sent_at`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (`assessment_id`),
+    INDEX (`recipient_email`),
+    INDEX (`email_type`),
+    INDEX (`sent_at`),
+    FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

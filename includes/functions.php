@@ -70,97 +70,13 @@ function logAudit(int $assessmentId, string $action, array $details = [], ?int $
     }
 }
 
-function ensureCheckReportColumns(PDO $pdo): void
+/**
+ * Maintained as a lightweight no-op for backward compatibility.
+ * All database tables, columns, and indexes are defined authoritatively in database/schema.sql.
+ */
+function ensureCheckReportColumns(?PDO $pdo = null): void
 {
-    static $checked = false;
-    if ($checked) return;
-    $checked = true;
-
-    try {
-        $colsStmt = $pdo->query("SHOW COLUMNS FROM `assessments`");
-        $existingCols = [];
-        while ($col = $colsStmt->fetch(PDO::FETCH_ASSOC)) {
-            $existingCols[$col['Field']] = true;
-        }
-
-        if (!isset($existingCols['phase_1_completed_at'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `phase_1_completed_at` DATETIME NULL DEFAULT NULL AFTER `completed_at`");
-        }
-        if (!isset($existingCols['checkpoint_pre_assessment'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_pre_assessment` TINYINT(1) NOT NULL DEFAULT 0 AFTER `phase_1_completed_at`");
-        }
-        if (!isset($existingCols['checkpoint_pre_assessment_at'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_pre_assessment_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_pre_assessment`");
-        }
-        if (!isset($existingCols['checkpoint_client_meetup'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_client_meetup` TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_pre_assessment_at`");
-        }
-        if (!isset($existingCols['checkpoint_client_meetup_at'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_client_meetup_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_client_meetup`");
-        }
-        if (!isset($existingCols['checkpoint_build_proposal'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_build_proposal` TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_client_meetup_at`");
-        }
-        if (!isset($existingCols['checkpoint_build_proposal_at'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_build_proposal_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_build_proposal`");
-        }
-        if (!isset($existingCols['checkpoint_final_bid'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_final_bid` TINYINT(1) NOT NULL DEFAULT 0 AFTER `checkpoint_build_proposal_at`");
-        }
-        if (!isset($existingCols['checkpoint_final_bid_at'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `checkpoint_final_bid_at` DATETIME NULL DEFAULT NULL AFTER `checkpoint_final_bid`");
-        }
-        if (!isset($existingCols['last_updated_by_user_id'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `last_updated_by_user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `checkpoint_final_bid_at`");
-        }
-        if (!isset($existingCols['is_deleted'])) {
-            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `is_deleted` TINYINT(1) NOT NULL DEFAULT 0 AFTER `last_updated_by_user_id`");
-        }
-
-        // Check and migrate phases table (weight, threshold)
-        $phaseColsStmt = $pdo->query("SHOW COLUMNS FROM `phases`");
-        $existingPhaseCols = [];
-        while ($col = $phaseColsStmt->fetch(PDO::FETCH_ASSOC)) {
-            $existingPhaseCols[$col['Field']] = true;
-        }
-
-        $needsPhaseUpdate = false;
-        if (!isset($existingPhaseCols['weight'])) {
-            $pdo->exec("ALTER TABLE `phases` ADD COLUMN `weight` DECIMAL(5,3) NOT NULL DEFAULT 0.000 AFTER `question_count`");
-            $needsPhaseUpdate = true;
-        }
-        if (!isset($existingPhaseCols['threshold'])) {
-            $pdo->exec("ALTER TABLE `phases` ADD COLUMN `threshold` DECIMAL(5,2) NOT NULL DEFAULT 0.00 AFTER `weight`");
-            $needsPhaseUpdate = true;
-        }
-
-        if ($needsPhaseUpdate) {
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.200, `threshold` = 65.00 WHERE `phase_number` = 1");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.150, `threshold` = 65.00 WHERE `phase_number` = 2");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.220, `threshold` = 65.00 WHERE `phase_number` = 3");
-            $pdo->exec("UPDATE `phases` SET `weight` = 0.180, `threshold` = 65.00 WHERE `phase_number` = 4");
-        }
-
-        // Create email_logs table for audit tracking
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS `email_logs` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `assessment_id` INT UNSIGNED NULL DEFAULT NULL,
-                `recipient_email` VARCHAR(191) NOT NULL,
-                `subject` VARCHAR(255) NOT NULL,
-                `email_type` VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
-                `status` VARCHAR(20) NOT NULL DEFAULT 'SENT',
-                `error_message` TEXT NULL DEFAULT NULL,
-                `sent_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX (`assessment_id`),
-                INDEX (`recipient_email`),
-                INDEX (`email_type`),
-                INDEX (`sent_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-    } catch (Exception $e) {
-        error_log("Column check/migration failed: " . $e->getMessage());
-    }
+    // Schema is authoritative in database/schema.sql. No runtime inspection or alter needed.
 }
 
 function generateAssessmentNumber(): string
