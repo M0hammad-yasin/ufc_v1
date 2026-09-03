@@ -121,55 +121,45 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                 </td>
                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                     <div class="relative inline-block text-left row-action-dropdown">
-                        <button type="button" 
-                                onclick="toggleRowDropdown(event, <?= (int)$ass['id'] ?>)"
-                                title="Assessment Actions"
-                                class="w-8 h-8 rounded-lg bg-[#060f1e] hover:bg-[#1a3a5c] text-slate-300 hover:text-white border border-[#1e3e68] flex items-center justify-center transition-colors cursor-pointer ml-auto">
+                        <button type="button"
+                            onclick="toggleRowDropdown(event, <?= (int)$ass['id'] ?>)"
+                            title="Assessment Actions"
+                            class="w-8 h-8 rounded-lg bg-[#060f1e] hover:bg-[#1a3a5c] text-slate-300 hover:text-white border border-[#1e3e68] flex items-center justify-center transition-colors cursor-pointer ml-auto">
                             <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
                         </button>
 
                         <!-- Mini Dropdown Menu -->
-                        <div id="row-dropdown-<?= (int)$ass['id'] ?>" 
-                             class="hidden absolute right-0 mt-1 w-52 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 text-left overflow-hidden py-1">
+                        <div id="row-dropdown-<?= (int)$ass['id'] ?>"
+                            class="hidden absolute right-0 mt-1 w-52 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 text-left overflow-hidden py-1">
                             <div class="px-3.5 py-1.5 border-b border-[#1e3e68] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 Quick Actions
                             </div>
 
-                            <!-- View Check Report & Milestones -->
-                            <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$ass['id'] ?>&tab=check-report" 
-                               class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
-                                <i class="fa-solid fa-clipboard-check text-[#c9a84c] text-sm"></i>
-                                <div class="flex-1 flex items-center justify-between">
-                                    <span>Check Report</span>
-                                    <?= $sla['dot_html'] ?>
-                                </div>
-                            </a>
-
                             <!-- Edit Assessment / Questions -->
-                            <a href="/ufc_v1/assessment/question.php?id=<?= (int)$ass['id'] ?>" 
-                               class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                            <a href="/ufc_v1/assessment/question.php?id=<?= (int)$ass['id'] ?>"
+                                class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-regular fa-pen-to-square text-blue-400 text-sm"></i>
                                 <span>Edit Assessment</span>
                             </a>
 
                             <!-- Full Details Inspector -->
-                            <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$ass['id'] ?>" 
-                               class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                            <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$ass['id'] ?>"
+                                class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-solid fa-circle-info text-sky-400 text-sm"></i>
                                 <span>Full Details</span>
                             </a>
 
                             <!-- Preview PDF -->
-                            <a href="/ufc_v1/assessment/preview-pdf.php?id=<?= (int)$ass['id'] ?>" 
-                               target="_blank"
-                               class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                            <a href="/ufc_v1/assessment/preview-pdf.php?id=<?= (int)$ass['id'] ?>"
+                                target="_blank"
+                                class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-regular fa-file-pdf text-amber-400 text-sm"></i>
                                 <span>Preview PDF Report</span>
                             </a>
 
                             <!-- Download PDF -->
-                            <a href="/ufc_v1/api/export_pdf.php?id=<?= (int)$ass['id'] ?>" 
-                               class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                            <a href="/ufc_v1/api/export_pdf.php?id=<?= (int)$ass['id'] ?>"
+                                class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
                                 <span>Download PDF</span>
                             </a>

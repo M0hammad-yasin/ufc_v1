@@ -70,7 +70,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
 
 <div class="max-w-4xl mx-auto">
     <!-- Progress Bar -->
-    <div class="mb-6">
+    <div class="my-6">
         <div class="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span class="text-[#c9a84c] uppercase tracking-wider font-bold">
                 Phase <?= $activePhaseNumber ?>: <?= htmlspecialchars($question['phase_title']) ?>
