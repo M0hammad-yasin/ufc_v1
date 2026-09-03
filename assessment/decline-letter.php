@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction - Client Decline Letter
  * Implements exact v5.0 PDF specification
@@ -19,6 +20,7 @@ $pageTitle = "Decline Letter — {$assessment['client_name']} — UFC";
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,23 +29,34 @@ $pageTitle = "Decline Letter — {$assessment['client_name']} — UFC";
     <link rel="stylesheet" href="/ufc_v1/assets/css/style.css">
     <style>
         @media print {
-            body { background: white !important; color: black !important; font-size: 11pt; }
-            .no-print { display: none !important; }
-            .print-border { border-color: #94a3b8 !important; }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-border {
+                border-color: #94a3b8 !important;
+            }
         }
     </style>
 </head>
+
 <body class="bg-slate-900 text-slate-100 min-h-screen py-8 px-4 sm:px-6">
 
     <!-- Action Toolbar (No Print) -->
-    <div class="max-w-4xl mx-auto mb-6 flex items-center justify-between no-print">
+    <div class="max-w-4xl mx-auto mt-6 mb-6 flex items-center justify-between no-print">
         <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-[#1a3a5c] px-3 py-1.5 rounded border border-[#1e3e68]">
             ← Return to Assessment
         </a>
         <div class="flex items-center gap-3">
             <button onclick="window.print()" class="px-4 py-1.5 bg-[#8b0000] hover:bg-red-700 text-white font-bold text-xs rounded shadow transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
                 <span>Print / Save PDF</span>
             </button>
@@ -51,8 +64,8 @@ $pageTitle = "Decline Letter — {$assessment['client_name']} — UFC";
     </div>
 
     <!-- Official Decline Letter Document -->
-    <div class="max-w-4xl mx-auto bg-white text-slate-900 rounded-xl shadow-2xl p-8 sm:p-14 border border-slate-300 font-sans print-border">
-        
+    <div class="max-w-4xl mx-auto mt-6 bg-white text-slate-900 rounded-xl shadow-2xl p-8 sm:p-14 border border-slate-300 font-sans print-border">
+
         <!-- Header / Letterhead -->
         <div class="border-b-2 border-[#0d1f3c] pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -104,7 +117,8 @@ $pageTitle = "Decline Letter — {$assessment['client_name']} — UFC";
                     This decision is not about your project or your documentation, both of which are in order. It reflects our current commitments and capacity. We would rather tell you now than take work we cannot staff properly.
                 <?php elseif ($reason === 'UNRESPONSIVE'): ?>
                     We did not receive the items requested in our letter of <?= $initialLetterDate ?> and have closed the file accordingly.
-                <?php else: // STOP_TRIGGER or other ?>
+                <?php else: // STOP_TRIGGER or other 
+                ?>
                     The condition that prevents us from proceeding is identified in the assessment. It is not a judgment about you or your project. It is a legal or regulatory condition that must be resolved before any licensed contractor can lawfully perform this work.
                 <?php endif; ?>
             </div>
@@ -126,4 +140,5 @@ $pageTitle = "Decline Letter — {$assessment['client_name']} — UFC";
         </div>
     </div>
 </body>
+
 </html>

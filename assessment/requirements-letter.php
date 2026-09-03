@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction - Client Requirements Letter
  * Implements exact v5.0 PDF specification
@@ -22,6 +23,7 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,23 +32,34 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
     <link rel="stylesheet" href="/ufc_v1/assets/css/style.css">
     <style>
         @media print {
-            body { background: white !important; color: black !important; font-size: 11pt; }
-            .no-print { display: none !important; }
-            .print-border { border-color: #94a3b8 !important; }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-border {
+                border-color: #94a3b8 !important;
+            }
         }
     </style>
 </head>
+
 <body class="bg-slate-900 text-slate-100 min-h-screen py-8 px-4 sm:px-6">
 
     <!-- Action Toolbar (No Print) -->
-    <div class="max-w-4xl mx-auto mb-6 flex items-center justify-between no-print">
+    <div class="max-w-4xl mx-auto mt-6 mb-6 flex items-center justify-between no-print">
         <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-[#1a3a5c] px-3 py-1.5 rounded border border-[#1e3e68]">
             ← Return to Assessment
         </a>
         <div class="flex items-center gap-3">
             <button onclick="window.print()" class="px-4 py-1.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-xs rounded shadow transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
                 <span>Print / Save PDF</span>
             </button>
@@ -54,8 +67,8 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
     </div>
 
     <!-- Official Letter Document -->
-    <div class="max-w-4xl mx-auto bg-white text-slate-900 rounded-xl shadow-2xl p-8 sm:p-14 border border-slate-300 font-sans print-border">
-        
+    <div class="max-w-4xl mx-auto mt-6 bg-white text-slate-900 rounded-xl shadow-2xl p-8 sm:p-14 border border-slate-300 font-sans print-border">
+
         <!-- Header / Letterhead -->
         <div class="border-b-2 border-[#0d1f3c] pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -129,32 +142,32 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
                             <span class="text-[11px] font-normal text-slate-500"><?= count($items) ?> Item(s)</span>
                         </div>
                         <div class="divide-y divide-slate-200">
-                            <?php foreach ($items as $item): 
+                            <?php foreach ($items as $item):
                                 $isRed = ($item['status_light'] === 'RED');
                             ?>
-                            <div class="p-4 text-xs space-y-2">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="font-bold text-slate-900 text-sm">
-                                        <span class="text-slate-500 mr-2 font-mono">Q<?= $item['question_number'] ?></span>
-                                        <?= htmlspecialchars($item['question_text']) ?>
+                                <div class="p-4 text-xs space-y-2">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div class="font-bold text-slate-900 text-sm">
+                                            <span class="text-slate-500 mr-2 font-mono">Q<?= $item['question_number'] ?></span>
+                                            <?= htmlspecialchars($item['question_text']) ?>
+                                        </div>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 <?= $isRed ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-amber-100 text-amber-800 border border-amber-300' ?>">
+                                            <?= $item['status_light'] ?>
+                                        </span>
                                     </div>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 <?= $isRed ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-amber-100 text-amber-800 border border-amber-300' ?>">
-                                        <?= $item['status_light'] ?>
-                                    </span>
+
+                                    <?php if (!empty($item['client_message'])): ?>
+                                        <div class="text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200 italic leading-relaxed">
+                                            <?= htmlspecialchars($item['client_message']) ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($item['reason'])): ?>
+                                        <div class="text-slate-700 text-[11px]">
+                                            <span class="font-semibold text-slate-900">Current Status / Note:</span> <?= htmlspecialchars($item['reason']) ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-
-                                <?php if (!empty($item['client_message'])): ?>
-                                    <div class="text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200 italic leading-relaxed">
-                                        <?= htmlspecialchars($item['client_message']) ?>
-                                    </div>
-                                <?php endif; ?>
-
-                                <?php if (!empty($item['reason'])): ?>
-                                    <div class="text-slate-700 text-[11px]">
-                                        <span class="font-semibold text-slate-900">Current Status / Note:</span> <?= htmlspecialchars($item['reason']) ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -175,4 +188,5 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
         </div>
     </div>
 </body>
+
 </html>

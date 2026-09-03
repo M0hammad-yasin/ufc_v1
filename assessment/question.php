@@ -68,7 +68,7 @@ require_once __DIR__ . '/../components/header.php';
 require_once __DIR__ . '/../components/phase-nav.php';
 ?>
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-4xl mx-auto mt-6">
     <!-- Progress Bar -->
     <div class="my-6">
         <div class="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">

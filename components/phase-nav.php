@@ -21,6 +21,7 @@ $phaseResultsMap = [];
 foreach ($resultsRows as $r) {
     $phaseResultsMap[$r['phase_number']] = $r;
 }
+$activePhaseNumber = $activePhaseNumber ?? $currentPhaseNum;
 ?>
 
 <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md no-print">
@@ -30,6 +31,7 @@ foreach ($resultsRows as $r) {
             $pRes = $phaseResultsMap[$pNum] ?? null;
             $unlocked = isPhaseUnlocked((int)$assessment['id'], $pNum);
             $isCurrent = ($pNum === $activePhaseNumber);
+            $phaseUrl = "/ufc_v1/assessment/question.php?id=" . (int)$assessment['id'] . "&q=" . $pNum . ".1";
 
             $badgeClass = 'bg-slate-800/80 text-slate-400 border-slate-700';
             $icon = '🔒';
@@ -57,12 +59,19 @@ foreach ($resultsRows as $r) {
                 $statusText = ($isCurrent) ? 'Active' : 'Unlocked';
             }
         ?>
-        <div class="p-3 rounded-lg border <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between">
+        <?php if ($unlocked): ?>
+            <a href="<?= $phaseUrl ?>" 
+               title="Go to Phase <?= $pNum ?> Questions (<?= htmlspecialchars($p['title']) ?>)"
+               class="group p-3 rounded-lg border cursor-pointer transition-all hover:border-[#c9a84c] hover:bg-[#122849] <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between no-underline">
+        <?php else: ?>
+            <div title="Phase <?= $pNum ?> is locked. Complete preceding phase gates to unlock."
+                 class="p-3 rounded-lg border cursor-not-allowed opacity-70 <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between">
+        <?php endif; ?>
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-bold tracking-wider uppercase">Phase <?= $pNum ?></span>
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full border border-current"><?= $icon ?> <?= $statusText ?></span>
             </div>
-            <div class="mt-2 text-xs font-medium text-slate-200 line-clamp-1">
+            <div class="mt-2 text-xs font-medium text-slate-200 line-clamp-1 <?= $unlocked ? 'group-hover:text-[#c9a84c] transition-colors' : '' ?>">
                 <?= htmlspecialchars($p['title']) ?>
             </div>
             <div class="text-[10px] text-slate-400 mt-1 italic line-clamp-1">
@@ -76,7 +85,11 @@ foreach ($resultsRows as $r) {
                     <span>Pass &ge; <strong class="text-emerald-400"><?= number_format($dispThresh, 1) ?>%</strong></span>
                 </div>
             <?php endif; ?>
-        </div>
+        <?php if ($unlocked): ?>
+            </a>
+        <?php else: ?>
+            </div>
+        <?php endif; ?>
         <?php endforeach; ?>
     </div>
 </div>

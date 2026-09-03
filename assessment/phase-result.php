@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction - Phase Gatekeeper Evaluation Result View
  */
@@ -37,16 +38,16 @@ $activePhaseNumber = $phaseNumber;
 require_once __DIR__ . '/../components/phase-nav.php';
 ?>
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-4xl mx-auto mt-6">
     <!-- Result Card -->
     <?php if ($gate['status'] === 'PASS'): ?>
         <div class="bg-[#0d1f3c] border-2 border-emerald-500/80 rounded-xl p-8 sm:p-10 shadow-2xl mb-8 relative overflow-hidden">
             <div class="absolute top-0 right-0 p-8 opacity-10">
                 <svg class="w-36 h-36 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
             </div>
-            
+
             <div class="flex items-center gap-3 mb-4">
                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-500">
                     GATE PASSED
@@ -82,11 +83,11 @@ require_once __DIR__ . '/../components/phase-nav.php';
 
             <div class="flex flex-wrap items-center gap-4">
                 <?php if ($phaseNumber < 4): ?>
-                    <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= ($phaseNumber + 1) . '.1' ?>" 
-                       class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
+                    <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= ($phaseNumber + 1) . '.1' ?>"
+                        class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                         <span>Unlock & Begin Phase <?= $phaseNumber + 1 ?></span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                     </a>
                 <?php else: ?>
@@ -95,8 +96,8 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     </div>
                 <?php endif; ?>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
-                   class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                    class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Assessment Summary
                 </a>
             </div>
@@ -141,17 +142,17 @@ require_once __DIR__ . '/../components/phase-nav.php';
             </div>
 
             <div class="flex flex-wrap items-center gap-4">
-                <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $phaseNumber ?>" 
-                   target="_blank"
-                   class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
+                <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $phaseNumber ?>"
+                    target="_blank"
+                    class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>View / Print Requirements Letter</span>
                 </a>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
-                   class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                    class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Return to Assessment Details
                 </a>
             </div>
@@ -174,17 +175,17 @@ require_once __DIR__ . '/../components/phase-nav.php';
             </p>
 
             <div class="flex flex-wrap items-center gap-4">
-                <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>" 
-                   target="_blank"
-                   class="px-8 py-3 bg-red-800 hover:bg-red-700 text-white font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
+                <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>"
+                    target="_blank"
+                    class="px-8 py-3 bg-red-800 hover:bg-red-700 text-white font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>View / Print Official Decline Letter</span>
                 </a>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
-                   class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
+                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                    class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Return to Assessment Details
                 </a>
             </div>
@@ -205,8 +206,8 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 Phase <?= $phaseNumber ?> cannot close until the Chief Executive Officer or legal counsel reviews and clears the escalation flag.
             </p>
 
-            <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
-               class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded shadow inline-block">
+            <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded shadow inline-block">
                 View Executive Override Panel
             </a>
         </div>
@@ -217,7 +218,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
         <h3 class="font-serif font-bold text-lg text-slate-100 mb-4">
             Phase <?= $phaseNumber ?> Item Responses
         </h3>
-        
+
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
@@ -232,7 +233,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#1e3e68]">
-                    <?php foreach ($questions as $q): 
+                    <?php foreach ($questions as $q):
                         $ans = $answersMap[$q['question_number']] ?? null;
                         $statusClass = 'badge-neutral';
                         if ($ans) {
@@ -241,26 +242,26 @@ require_once __DIR__ . '/../components/phase-nav.php';
                             if ($ans['status_light'] === 'RED') $statusClass = 'badge-red';
                         }
                     ?>
-                    <tr class="hover:bg-[#1a3a5c]/30 transition-colors">
-                        <td class="py-3 px-3 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
-                        <td class="py-3 px-3 font-medium text-slate-200 max-w-xs"><?= htmlspecialchars($q['question_text']) ?></td>
-                        <td class="py-3 px-3 text-slate-400"><?= $q['owner'] ?></td>
-                        <td class="py-3 px-3 font-semibold text-slate-200">
-                            <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
-                        </td>
-                        <td class="py-3 px-3">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= $statusClass ?>">
-                                <?= $ans['status_light'] ?? 'PENDING' ?>
-                            </span>
-                        </td>
-                        <td class="py-3 px-3 text-slate-300"><?= $ans ? "{$ans['score']}/{$ans['points_possible']}" : '—' ?></td>
-                        <td class="py-3 px-3 text-right">
-                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $q['question_number'] ?>" 
-                               class="text-xs text-[#c9a84c] hover:underline font-semibold">
-                                Edit
-                            </a>
-                        </td>
-                    </tr>
+                        <tr class="hover:bg-[#1a3a5c]/30 transition-colors">
+                            <td class="py-3 px-3 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
+                            <td class="py-3 px-3 font-medium text-slate-200 max-w-xs"><?= htmlspecialchars($q['question_text']) ?></td>
+                            <td class="py-3 px-3 text-slate-400"><?= $q['owner'] ?></td>
+                            <td class="py-3 px-3 font-semibold text-slate-200">
+                                <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= $statusClass ?>">
+                                    <?= $ans['status_light'] ?? 'PENDING' ?>
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-slate-300"><?= $ans ? "{$ans['score']}/{$ans['points_possible']}" : '—' ?></td>
+                            <td class="py-3 px-3 text-right">
+                                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $q['question_number'] ?>"
+                                    class="text-xs text-[#c9a84c] hover:underline font-semibold">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
