@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction — Start New Client Pre-Assessment
  * Redesigned landing page matching the UFC Master Framework reference UI.
@@ -191,7 +192,7 @@ require_once __DIR__ . '/../components/header.php';
                                 required>
                             <!-- Status icon -->
                             <span id="proj-status-icon"
-                                  class="absolute right-3 top-1/2 -translate-y-1/2 text-base hidden pointer-events-none">
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-base hidden pointer-events-none">
                             </span>
                         </div>
                         <!-- Unified feedback: validating / taken / available -->
@@ -260,156 +261,166 @@ require_once __DIR__ . '/../components/header.php';
 
 <!-- ── Tier descriptions (JSON island for JS) ──────────────────────────── -->
 <script>
-const TIER_DATA = <?= json_encode(
-    array_column($tiers, null, 'id'),
-    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
-) ?>;
+    const TIER_DATA = <?= json_encode(
+                            array_column($tiers, null, 'id'),
+                            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+                        ) ?>;
 </script>
 
 <script>
-(function () {
-    /* ── DOM refs ─────────────────────────────────────────────────────── */
-    const clientName  = document.getElementById('client-name');
-    const emailAddr   = document.getElementById('email-addr');
-    const projName    = document.getElementById('proj-name');
-    const projFb      = document.getElementById('proj-name-feedback');
-    const projIcon    = document.getElementById('proj-status-icon');
-    const startBtn    = document.getElementById('start-btn');
-    const tierSel     = document.getElementById('tier-id');
-    const tierDesc    = document.getElementById('tier-desc');
+    (function() {
+        /* ── DOM refs ─────────────────────────────────────────────────────── */
+        const clientName = document.getElementById('client-name');
+        const emailAddr = document.getElementById('email-addr');
+        const projName = document.getElementById('proj-name');
+        const projFb = document.getElementById('proj-name-feedback');
+        const projIcon = document.getElementById('proj-status-icon');
+        const startBtn = document.getElementById('start-btn');
+        const tierSel = document.getElementById('tier-id');
+        const tierDesc = document.getElementById('tier-desc');
 
-    /* ── State ────────────────────────────────────────────────────────── */
-    let projAvailable = (projName.value.trim().length >= 3) ? null : false;
-    // null = "not yet checked"  false = "taken / error"  true = "available"
+        /* ── State ────────────────────────────────────────────────────────── */
+        let projAvailable = (projName.value.trim().length >= 3) ? null : false;
+        // null = "not yet checked"  false = "taken / error"  true = "available"
 
-    /* ── Button style helpers ─────────────────────────────────────────── */
-    function enableBtn() {
-        startBtn.disabled = false;
-        startBtn.style.background = '#8b0000';
-        startBtn.style.color = '#fff';
-    }
-    function disableBtn() {
-        startBtn.disabled = true;
-        startBtn.style.background = '#1a3a5c';
-        startBtn.style.color = '#94a3b8';
-    }
-
-    /* ── Validation gate ──────────────────────────────────────────────── */
-    function checkCanSubmit() {
-        const nameOk  = clientName.value.trim().length >= 2;
-        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddr.value.trim());
-        const projOk  = projAvailable === true;
-        if (nameOk && emailOk && projOk) {
-            enableBtn();
-        } else {
-            disableBtn();
+        /* ── Button style helpers ─────────────────────────────────────────── */
+        function enableBtn() {
+            startBtn.disabled = false;
+            startBtn.style.background = '#8b0000';
+            startBtn.style.color = '#fff';
         }
-    }
 
-    /* ── Field error helpers ──────────────────────────────────────────── */
-    function showErr(el, msg) {
-        el.textContent = msg;
-        el.classList.remove('hidden');
-    }
-    function clearErr(el) {
-        el.textContent = '';
-        el.classList.add('hidden');
-    }
-
-    /* ── Client name live validation ──────────────────────────────────── */
-    clientName.addEventListener('input', function () {
-        const v = this.value.trim();
-        const errEl = document.getElementById('client-name-err');
-        if (v.length > 0 && v.length < 2) showErr(errEl, 'At least 2 characters required.');
-        else clearErr(errEl);
-        checkCanSubmit();
-    });
-
-    /* ── Email live validation ────────────────────────────────────────── */
-    emailAddr.addEventListener('input', function () {
-        const v = this.value.trim();
-        const errEl = document.getElementById('email-addr-err');
-        if (v.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
-            showErr(errEl, 'Please enter a valid email address.');
-        else clearErr(errEl);
-        checkCanSubmit();
-    });
-
-    /* ── Tier description display ─────────────────────────────────────── */
-    tierSel.addEventListener('change', function () {
-        const id = parseInt(this.value, 10);
-        if (TIER_DATA[id] && TIER_DATA[id].description) {
-            tierDesc.textContent = TIER_DATA[id].description;
-        } else {
-            tierDesc.textContent = '';
+        function disableBtn() {
+            startBtn.disabled = true;
+            startBtn.style.background = '#1a3a5c';
+            startBtn.style.color = '#94a3b8';
         }
-    });
 
-    /* ── Project-name live check ──────────────────────────────────────── */
-    let debounceTimer = null;
+        /* ── Validation gate ──────────────────────────────────────────────── */
+        function checkCanSubmit() {
+            const nameOk = clientName.value.trim().length >= 2;
+            const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddr.value.trim());
+            const projOk = projAvailable === true;
+            if (nameOk && emailOk && projOk) {
+                enableBtn();
+            } else {
+                disableBtn();
+            }
+        }
 
-    function setFeedback(text, colorClass, icon) {
-        projFb.textContent = text;
-        projFb.className = 'text-[12px] mt-1 ' + colorClass;
-        projFb.classList.remove('hidden');
-        projIcon.textContent = icon;
-        projIcon.classList.remove('hidden');
-    }
-    function clearFeedback() {
-        projFb.textContent = '';
-        projFb.classList.add('hidden');
-        projIcon.textContent = '';
-        projIcon.classList.add('hidden');
-    }
+        /* ── Field error helpers ──────────────────────────────────────────── */
+        function showErr(el, msg) {
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
 
-    projName.addEventListener('input', function () {
-        const val = this.value.trim();
-        clearTimeout(debounceTimer);
+        function clearErr(el) {
+            el.textContent = '';
+            el.classList.add('hidden');
+        }
 
-        if (val.length < 3) {
-            projAvailable = false;
-            clearFeedback();
+        /* ── Client name live validation ──────────────────────────────────── */
+        clientName.addEventListener('input', function() {
+            const v = this.value.trim();
+            const errEl = document.getElementById('client-name-err');
+            if (v.length > 0 && v.length < 2) showErr(errEl, 'At least 2 characters required.');
+            else clearErr(errEl);
             checkCanSubmit();
-            return;
+        });
+
+        /* ── Email live validation ────────────────────────────────────────── */
+        emailAddr.addEventListener('input', function() {
+            const v = this.value.trim();
+            const errEl = document.getElementById('email-addr-err');
+            if (v.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+                showErr(errEl, 'Please enter a valid email address.');
+            else clearErr(errEl);
+            checkCanSubmit();
+        });
+
+        /* ── Tier description display ─────────────────────────────────────── */
+        tierSel.addEventListener('change', function() {
+            const id = parseInt(this.value, 10);
+            if (TIER_DATA[id] && TIER_DATA[id].description) {
+                tierDesc.textContent = TIER_DATA[id].description;
+            } else {
+                tierDesc.textContent = '';
+            }
+        });
+
+        /* ── Project-name live check ──────────────────────────────────────── */
+        let debounceTimer = null;
+
+        function setFeedback(text, colorClass, icon) {
+            projFb.textContent = text;
+            projFb.className = 'text-[12px] mt-1 ' + colorClass;
+            projFb.classList.remove('hidden');
+            projIcon.textContent = icon;
+            projIcon.classList.remove('hidden');
         }
 
-        // Show "checking…" immediately
-        setFeedback('Checking availability…', 'text-[#c9a84c]', '⏳');
-        projAvailable = null;
-        disableBtn();
+        function clearFeedback() {
+            projFb.textContent = '';
+            projFb.classList.add('hidden');
+            projIcon.textContent = '';
+            projIcon.classList.add('hidden');
+        }
 
-        debounceTimer = setTimeout(function () {
-            fetch('/ufc_v1/api/check_project_name.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: val })
-            })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.available) {
-                    projAvailable = true;
-                    setFeedback('✓ Project name is available', 'text-[#4ade80]', '✅');
-                } else {
-                    projAvailable = false;
-                    setFeedback('✗ This project name is already taken', 'text-[#f87171]', '❌');
-                }
-                checkCanSubmit();
-            })
-            .catch(function () {
+        projName.addEventListener('input', function() {
+            const val = this.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (val.length < 3) {
                 projAvailable = false;
-                setFeedback('Could not verify — check your connection', 'text-[#f87171]', '⚠️');
+                clearFeedback();
+                setFeedback('Project name must be at least 3 characters', 'text-red-400', '❌');
                 checkCanSubmit();
-            });
-        }, 480);
-    });
+                return;
+            }
 
-    /* ── Trigger initial state for pre-filled values ──────────────────── */
-    if (projName.value.trim().length >= 3) {
-        projName.dispatchEvent(new Event('input'));
-    }
-    clientName.dispatchEvent(new Event('input'));
-    emailAddr.dispatchEvent(new Event('input'));
-})();
+            // Show "checking…" immediately
+            setFeedback('Checking availability…', 'text-[#c9a84c]', '⏳');
+            projAvailable = null;
+            disableBtn();
+
+            debounceTimer = setTimeout(function() {
+                fetch('/ufc_v1/api/check_project_name.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: val
+                        })
+                    })
+                    .then(function(r) {
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        if (data.available) {
+                            projAvailable = true;
+                            setFeedback('✓ Project name is available', 'text-[#4ade80]', '✅');
+                        } else {
+                            projAvailable = false;
+                            setFeedback('✗ This project name is already taken', 'text-[#f87171]', '❌');
+                        }
+                        checkCanSubmit();
+                    })
+                    .catch(function() {
+                        projAvailable = false;
+                        setFeedback('Could not verify — check your connection', 'text-[#f87171]', '⚠️');
+                        checkCanSubmit();
+                    });
+            }, 480);
+        });
+
+        /* ── Trigger initial state for pre-filled values ──────────────────── */
+        if (projName.value.trim().length >= 3) {
+            projName.dispatchEvent(new Event('input'));
+        }
+        clientName.dispatchEvent(new Event('input'));
+        emailAddr.dispatchEvent(new Event('input'));
+    })();
 </script>
 
 <?php require_once __DIR__ . '/../components/footer.php'; ?>
