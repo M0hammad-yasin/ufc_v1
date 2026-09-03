@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/questions.php';
 require_once __DIR__ . '/../includes/evaluation.php';
+require_once __DIR__ . '/../includes/SearchService.php';
 
 requireLogin();
 $currentUser = getCurrentUser();
@@ -36,15 +37,9 @@ if (!empty($statusFilter)) {
     $params[] = $statusFilter;
 }
 
-if (!empty($searchQuery)) {
-    $sql .= " AND (a.client_name LIKE ? OR a.project_name LIKE ? OR a.project_address LIKE ? OR a.assessment_number LIKE ? OR a.client_phone LIKE ?)";
-    $like = "%{$searchQuery}%";
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-}
+$search = SearchService::buildClause($searchQuery, ['a.client_name', 'a.project_name', 'a.project_address', 'a.assessment_number', 'a.client_phone']);
+$sql   .= $search['sql'];
+$params = array_merge($params, $search['params']);
 
 $sql .= " ORDER BY a.updated_at DESC";
 $stmt = $pdo->prepare($sql);
@@ -281,40 +276,18 @@ require_once __DIR__ . '/../components/header.php';
             </a>
         </div>
 
-        <!-- Search Form with Live Search & Debounce -->
+        <!-- Search — Centralized Live Search Widget (0.6s debounce) -->
         <form action="" method="GET" id="live-search-form" class="w-full md:w-72">
-            <input type="hidden" name="status" id="search-status-filter" value="<?= htmlspecialchars($statusFilter) ?>">
-            <div class="relative flex items-center">
-                <!-- Search Icon -->
-                <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-
-                <input type="text"
-                    name="search"
-                    id="live-search-input"
-                    value="<?= htmlspecialchars($searchQuery) ?>"
-                    placeholder="Search client, address, ref..."
-                    autocomplete="off"
-                    class="w-full pl-9 pr-8 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-md text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] transition-all">
-
-                <!-- Loading Spinner Icon -->
-                <div id="search-loading-spinner" class="hidden absolute right-2.5 flex items-center pointer-events-none">
-                    <svg class="animate-spin h-3.5 w-3.5 text-[#c9a84c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                    </svg>
-                </div>
-
-                <!-- Clear Button -->
-                <button type="button"
-                    id="search-clear-btn"
-                    class="<?= empty($searchQuery) ? 'hidden' : '' ?> absolute right-2.5 text-slate-400 hover:text-white transition-colors"
-                    title="Clear search"
-                    aria-label="Clear search">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
-            </div>
+            <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>">
+            <?= SearchService::renderInput([
+                'id'          => 'live-search-input',
+                'value'       => $searchQuery,
+                'placeholder' => 'Search client, project, ref...',
+                'target_table'=> '#assessments-table-body',
+                'form_id'     => 'live-search-form',
+                'debounce'    => 600,
+                'wrapper_class' => 'relative w-full',
+            ]) ?>
         </form>
     </div>
 
@@ -340,141 +313,8 @@ require_once __DIR__ . '/../components/header.php';
     </div>
 </div>
 
-<!-- Live Search Debounce Script -->
+<!-- Row Actions Script (search handled globally by live-search.js) -->
 <script>
-    (function() {
-        const searchInput = document.getElementById('live-search-input');
-        const searchForm = document.getElementById('live-search-form');
-        const tableBody = document.getElementById('assessments-table-body');
-        const clearBtn = document.getElementById('search-clear-btn');
-        const spinner = document.getElementById('search-loading-spinner');
-        const statusInput = document.getElementById('search-status-filter');
-
-        if (!searchInput || !tableBody) return;
-
-        // Configuration: Debounce delay in milliseconds to prevent excessive database queries on every keystroke
-        const DEBOUNCE_DELAY_MS = 350;
-        let debounceTimer = null;
-        let currentAbortController = null;
-        let lastQueriedValue = searchInput.value.trim();
-
-        /**
-         * Executes the search request to fetch updated table rows
-         * @param {string} query - The search keyword
-         */
-        async function executeSearch(query) {
-            const trimmedQuery = query.trim();
-
-            // Update clear button visibility
-            if (clearBtn) {
-                clearBtn.classList.toggle('hidden', trimmedQuery.length === 0);
-            }
-
-            // Abort any ongoing in-flight request to prevent race conditions
-            if (currentAbortController) {
-                currentAbortController.abort();
-            }
-            currentAbortController = new AbortController();
-
-            // Show spinner and subtle dimming on table
-            if (spinner) spinner.classList.remove('hidden');
-            if (clearBtn && trimmedQuery.length > 0) clearBtn.classList.add('hidden');
-            tableBody.classList.add('opacity-60');
-
-            const statusVal = statusInput ? statusInput.value : '';
-            const params = new URLSearchParams();
-            params.set('ajax', '1');
-            if (statusVal) params.set('status', statusVal);
-            if (trimmedQuery) params.set('search', trimmedQuery);
-
-            try {
-                const response = await fetch(`/ufc_v1/admin/assessments.php?${params.toString()}`, {
-                    method: 'GET',
-                    signal: currentAbortController.signal,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok');
-
-                const data = await response.json();
-                if (data && typeof data.html === 'string') {
-                    tableBody.innerHTML = data.html;
-                    lastQueriedValue = trimmedQuery;
-
-                    // Sync URL query string without reloading page
-                    const browserUrl = new URL(window.location.href);
-                    if (trimmedQuery) {
-                        browserUrl.searchParams.set('search', trimmedQuery);
-                    } else {
-                        browserUrl.searchParams.delete('search');
-                    }
-                    if (statusVal) {
-                        browserUrl.searchParams.set('status', statusVal);
-                    } else {
-                        browserUrl.searchParams.delete('status');
-                    }
-                    window.history.replaceState({}, '', browserUrl.toString());
-                }
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('Live search request error:', err);
-                }
-            } finally {
-                if (spinner) spinner.classList.add('hidden');
-                if (clearBtn && searchInput.value.trim().length > 0) clearBtn.classList.remove('hidden');
-                tableBody.classList.remove('opacity-60');
-            }
-        }
-
-        /**
-         * Debounced input handler (hook that stops DB search for few ms to avoid query per keypress)
-         */
-        function handleInput() {
-            const query = searchInput.value;
-
-            // Toggle clear button immediately while typing
-            if (clearBtn) {
-                clearBtn.classList.toggle('hidden', query.trim().length === 0);
-            }
-
-            // Reset previous debounce timer on every keystroke
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-            }
-
-            // Hook delay before querying DB
-            debounceTimer = setTimeout(() => {
-                if (searchInput.value.trim() !== lastQueriedValue) {
-                    executeSearch(searchInput.value);
-                }
-            }, DEBOUNCE_DELAY_MS);
-        }
-
-        // Input event for live debounced searching
-        searchInput.addEventListener('input', handleInput);
-
-        // Prevent full page reload on Enter, but execute search immediately
-        if (searchForm) {
-            searchForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (debounceTimer) clearTimeout(debounceTimer);
-                executeSearch(searchInput.value);
-            });
-        }
-
-        // Clear button action
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function() {
-                searchInput.value = '';
-                if (debounceTimer) clearTimeout(debounceTimer);
-                searchInput.focus();
-                executeSearch('');
-            });
-        }
-    })();
-
     // Global Row Action 3-Dot Mini Dropdown Menu Handler
     window.toggleRowDropdown = function(e, id) {
         if (e) e.stopPropagation();

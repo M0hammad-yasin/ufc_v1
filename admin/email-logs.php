@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/DateService.php';
+require_once __DIR__ . '/../includes/SearchService.php';
 
 requireLogin();
 $currentUser = getCurrentUser();
@@ -58,20 +59,134 @@ if ($filterAssId > 0) {
     $params[] = $filterAssId;
 }
 
-if (!empty($searchQuery)) {
-    $sql .= " AND (l.recipient_email LIKE ? OR l.subject LIKE ? OR a.client_name LIKE ? OR a.assessment_number LIKE ? OR a.project_name LIKE ?)";
-    $like = "%{$searchQuery}%";
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
-}
+$search = SearchService::buildClause($searchQuery, ['l.recipient_email', 'l.subject', 'a.client_name', 'a.assessment_number', 'a.project_name']);
+$sql   .= $search['sql'];
+$params = array_merge($params, $search['params']);
 
 $sql .= " ORDER BY l.sent_at DESC LIMIT 150";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/**
+ * Render table rows for email-logs list (used for full page load and AJAX live search).
+ */
+function renderEmailLogRows(array $logs, string $searchQuery = ''): string
+{
+    ob_start();
+    if (empty($logs)): ?>
+        <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">
+                <div class="flex flex-col items-center justify-center space-y-2">
+                    <i class="fa-regular fa-envelope text-3xl text-slate-500"></i>
+                    <?php if (!empty($searchQuery)): ?>
+                        <span class="text-sm font-semibold">No logs found matching "<span class="text-slate-200"><?= htmlspecialchars($searchQuery) ?></span>".</span>
+                    <?php else: ?>
+                        <span class="text-sm font-semibold">No email logs found matching criteria.</span>
+                        <span class="text-xs text-slate-500">Outbound emails sent via letter engine, lead sheets, or automated cron will appear here.</span>
+                    <?php endif; ?>
+                </div>
+            </td>
+        </tr>
+    <?php else:
+        foreach ($logs as $log):
+            $typeKey = $log['email_type'] ?? 'GENERAL';
+            $typeBadgeClass = match($typeKey) {
+                'SLA_REMINDER'        => 'bg-amber-950/80 text-[#c9a84c] border-amber-600/50',
+                'REQUIREMENTS_LETTER' => 'bg-blue-950/80 text-blue-300 border-blue-600/50',
+                'LEAD_SUMMARY'        => 'bg-sky-950/80 text-sky-300 border-sky-600/50',
+                'CUSTOM'              => 'bg-purple-950/80 text-purple-300 border-purple-600/50',
+                default               => 'bg-slate-800 text-slate-300 border-slate-700',
+            };
+            $typeLabel = match($typeKey) {
+                'SLA_REMINDER'        => 'SLA Reminder',
+                'REQUIREMENTS_LETTER' => 'Notice Letter',
+                'LEAD_SUMMARY'        => 'Lead Summary',
+                'CUSTOM'              => 'Custom Email',
+                default               => 'General Email',
+            };
+            $isSent = ($log['status'] === 'SENT');
+        ?>
+        <tr class="hover:bg-[#1a3a5c]/30 transition-colors">
+            <!-- Date & Time -->
+            <td class="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">
+                <div><?= formatDate($log['sent_at'], 'M j, Y') ?></div>
+                <div class="text-[10px] text-slate-500 font-mono"><?= formatDate($log['sent_at'], 'H:i:s') ?></div>
+            </td>
+            <!-- Type Badge -->
+            <td class="py-3.5 px-4 whitespace-nowrap">
+                <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border <?= $typeBadgeClass ?> inline-flex items-center gap-1.5">
+                    <?php if ($typeKey === 'SLA_REMINDER'): ?>
+                        <i class="fa-solid fa-clock text-[10px]"></i>
+                    <?php elseif ($typeKey === 'REQUIREMENTS_LETTER'): ?>
+                        <i class="fa-regular fa-file-lines text-[10px]"></i>
+                    <?php elseif ($typeKey === 'LEAD_SUMMARY'): ?>
+                        <i class="fa-solid fa-address-card text-[10px]"></i>
+                    <?php else: ?>
+                        <i class="fa-solid fa-envelope text-[10px]"></i>
+                    <?php endif; ?>
+                    <span><?= $typeLabel ?></span>
+                </span>
+            </td>
+            <!-- Recipient -->
+            <td class="py-3.5 px-4 font-semibold text-slate-200">
+                <div><?= htmlspecialchars($log['recipient_email']) ?></div>
+            </td>
+            <!-- Subject -->
+            <td class="py-3.5 px-4 text-slate-300 max-w-sm truncate" title="<?= htmlspecialchars($log['subject']) ?>">
+                <div class="truncate font-medium text-white"><?= htmlspecialchars($log['subject']) ?></div>
+                <?php if (!empty($log['error_message'])): ?>
+                    <div class="text-[10px] text-red-400 mt-0.5 truncate" title="<?= htmlspecialchars($log['error_message']) ?>">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i><?= htmlspecialchars($log['error_message']) ?>
+                    </div>
+                <?php endif; ?>
+            </td>
+            <!-- Assessment Link -->
+            <td class="py-3.5 px-4 whitespace-nowrap">
+                <?php if (!empty($log['assessment_id'])): ?>
+                    <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$log['assessment_id'] ?>"
+                       class="font-mono text-xs font-bold text-[#c9a84c] hover:underline flex items-center gap-1.5">
+                        <span><?= htmlspecialchars($log['assessment_number'] ?? ('#' . $log['assessment_id'])) ?></span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                    <?php if (!empty($log['client_name'])): ?>
+                        <div class="text-[10px] text-slate-400 truncate max-w-[130px]"><?= htmlspecialchars($log['client_name']) ?></div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <span class="text-slate-500">—</span>
+                <?php endif; ?>
+            </td>
+            <!-- Status -->
+            <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                <?php if ($isSent): ?>
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500 shadow-sm inline-flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>Sent</span>
+                    </span>
+                <?php else: ?>
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-red-950/80 text-red-300 border border-red-600/60 shadow-sm inline-flex items-center gap-1"
+                          title="<?= htmlspecialchars($log['error_message'] ?? 'Delivery failed') ?>">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                        <span>Failed</span>
+                    </span>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php endforeach;
+    endif;
+    return (string)ob_get_clean();
+}
+
+// Handle AJAX Live Search Request
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => true,
+        'html'    => renderEmailLogRows($logs, $searchQuery),
+        'count'   => count($logs),
+    ]);
+    exit;
+}
 
 $pageTitle = 'Email Logs & Insights — UFC Framework';
 require_once __DIR__ . '/../components/header.php';
@@ -156,7 +271,7 @@ require_once __DIR__ . '/../components/header.php';
 
     <!-- ══ FILTER & SEARCH BAR ═══════════════════════════════════════════════ -->
     <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md space-y-3">
-        <form method="GET" action="/ufc_v1/admin/email-logs.php" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <form method="GET" action="/ufc_v1/admin/email-logs.php" id="email-logs-filter-form" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <?php if ($filterAssId > 0): ?>
                 <input type="hidden" name="assessment_id" value="<?= $filterAssId ?>">
             <?php endif; ?>
@@ -178,7 +293,7 @@ require_once __DIR__ . '/../components/header.php';
                 </a>
             </div>
 
-            <!-- Type Filter Dropdown & Search Field -->
+            <!-- Type Filter Dropdown & Live Search Field -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <!-- Type Filter -->
                 <select name="type" onchange="this.form.submit()" 
@@ -190,18 +305,16 @@ require_once __DIR__ . '/../components/header.php';
                     <option value="CUSTOM" <?= $typeFilter === 'CUSTOM' ? 'selected' : '' ?>>Custom Messages (<?= $customCount ?>)</option>
                 </select>
 
-                <!-- Search Field -->
-                <div class="relative min-w-[220px]">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                    <input type="text" name="search" value="<?= htmlspecialchars($searchQuery) ?>" 
-                           placeholder="Search recipient, subject..."
-                           class="w-full pl-8 pr-3 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#c9a84c] transition-colors">
-                </div>
-
-                <button type="submit" 
-                        class="px-3.5 py-1.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded-lg border border-[#1e3e68] transition-colors cursor-pointer">
-                    Filter
-                </button>
+                <!-- Live Search Widget (0.6s debounce, no Enter required) -->
+                <?= SearchService::renderInput([
+                    'id'           => 'email-logs-search-input',
+                    'value'        => $searchQuery,
+                    'placeholder'  => 'Search recipient, subject, client...',
+                    'target_table' => '#email-logs-table-body',
+                    'form_id'      => 'email-logs-filter-form',
+                    'debounce'     => 600,
+                    'wrapper_class'=> 'relative min-w-[240px]',
+                ]) ?>
             </div>
         </form>
     </div>
@@ -220,108 +333,8 @@ require_once __DIR__ . '/../components/header.php';
                         <th class="py-3.5 px-4 font-semibold text-right">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#1e3e68]">
-                    <?php if (empty($logs)): ?>
-                        <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400">
-                                <div class="flex flex-col items-center justify-center space-y-2">
-                                    <i class="fa-regular fa-envelope text-3xl text-slate-500"></i>
-                                    <span class="text-sm font-semibold">No email logs found matching criteria.</span>
-                                    <span class="text-xs text-slate-500">Outbound emails sent via letter engine, lead sheets, or automated cron will appear here.</span>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($logs as $log): 
-                            $typeKey = $log['email_type'] ?? 'GENERAL';
-                            $typeBadgeClass = match($typeKey) {
-                                'SLA_REMINDER'        => 'bg-amber-950/80 text-[#c9a84c] border-amber-600/50',
-                                'REQUIREMENTS_LETTER' => 'bg-blue-950/80 text-blue-300 border-blue-600/50',
-                                'LEAD_SUMMARY'        => 'bg-sky-950/80 text-sky-300 border-sky-600/50',
-                                'CUSTOM'              => 'bg-purple-950/80 text-purple-300 border-purple-600/50',
-                                default               => 'bg-slate-800 text-slate-300 border-slate-700',
-                            };
-                            $typeLabel = match($typeKey) {
-                                'SLA_REMINDER'        => 'SLA Reminder',
-                                'REQUIREMENTS_LETTER' => 'Notice Letter',
-                                'LEAD_SUMMARY'        => 'Lead Summary',
-                                'CUSTOM'              => 'Custom Email',
-                                default               => 'General Email',
-                            };
-                            $isSent = ($log['status'] === 'SENT');
-                        ?>
-                        <tr class="hover:bg-[#1a3a5c]/30 transition-colors">
-                            <!-- Date & Time -->
-                            <td class="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">
-                                <div><?= formatDate($log['sent_at'], 'M j, Y') ?></div>
-                                <div class="text-[10px] text-slate-500 font-mono"><?= formatDate($log['sent_at'], 'H:i:s') ?></div>
-                            </td>
-
-                            <!-- Type Badge -->
-                            <td class="py-3.5 px-4 whitespace-nowrap">
-                                <span class="px-2.5 py-0.5 rounded text-[11px] font-bold border <?= $typeBadgeClass ?> inline-flex items-center gap-1.5">
-                                    <?php if ($typeKey === 'SLA_REMINDER'): ?>
-                                        <i class="fa-solid fa-clock text-[10px]"></i>
-                                    <?php elseif ($typeKey === 'REQUIREMENTS_LETTER'): ?>
-                                        <i class="fa-regular fa-file-lines text-[10px]"></i>
-                                    <?php elseif ($typeKey === 'LEAD_SUMMARY'): ?>
-                                        <i class="fa-solid fa-address-card text-[10px]"></i>
-                                    <?php else: ?>
-                                        <i class="fa-solid fa-envelope text-[10px]"></i>
-                                    <?php endif; ?>
-                                    <span><?= $typeLabel ?></span>
-                                </span>
-                            </td>
-
-                            <!-- Recipient -->
-                            <td class="py-3.5 px-4 font-semibold text-slate-200">
-                                <div><?= htmlspecialchars($log['recipient_email']) ?></div>
-                            </td>
-
-                            <!-- Subject -->
-                            <td class="py-3.5 px-4 text-slate-300 max-w-sm truncate" title="<?= htmlspecialchars($log['subject']) ?>">
-                                <div class="truncate font-medium text-white"><?= htmlspecialchars($log['subject']) ?></div>
-                                <?php if (!empty($log['error_message'])): ?>
-                                    <div class="text-[10px] text-red-400 mt-0.5 truncate" title="<?= htmlspecialchars($log['error_message']) ?>">
-                                        <i class="fa-solid fa-circle-exclamation mr-1"></i><?= htmlspecialchars($log['error_message']) ?>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-
-                            <!-- Assessment Link -->
-                            <td class="py-3.5 px-4 whitespace-nowrap">
-                                <?php if (!empty($log['assessment_id'])): ?>
-                                    <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$log['assessment_id'] ?>" 
-                                       class="font-mono text-xs font-bold text-[#c9a84c] hover:underline flex items-center gap-1.5">
-                                        <span><?= htmlspecialchars($log['assessment_number'] ?? ('#' . $log['assessment_id'])) ?></span>
-                                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                    </a>
-                                    <?php if (!empty($log['client_name'])): ?>
-                                        <div class="text-[10px] text-slate-400 truncate max-w-[130px]"><?= htmlspecialchars($log['client_name']) ?></div>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <span class="text-slate-500">—</span>
-                                <?php endif; ?>
-                            </td>
-
-                            <!-- Status -->
-                            <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                <?php if ($isSent): ?>
-                                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500 shadow-sm inline-flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                        <span>Sent</span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-red-950/80 text-red-300 border border-red-600/60 shadow-sm inline-flex items-center gap-1"
-                                          title="<?= htmlspecialchars($log['error_message'] ?? 'Delivery failed') ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                        <span>Failed</span>
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+            <tbody id="email-logs-table-body" class="divide-y divide-[#1e3e68] transition-opacity duration-150">
+                    <?= renderEmailLogRows($logs, $searchQuery) ?>
                 </tbody>
             </table>
         </div>
