@@ -22,10 +22,12 @@ $sql = "
     SELECT 
         a.*, 
         u.name AS assessor_name,
+        u_updated.name AS last_updated_by_name,
         (SELECT COUNT(*) FROM follow_up_tasks t WHERE t.assessment_id = a.id AND t.status = 'OPEN') AS open_tasks_count
     FROM assessments a
     LEFT JOIN users u ON a.assessor_id = u.id
-    WHERE 1=1
+    LEFT JOIN users u_updated ON a.last_updated_by_user_id = u_updated.id
+    WHERE (a.is_deleted = 0 OR a.is_deleted IS NULL)
 ";
 $params = [];
 
@@ -35,8 +37,10 @@ if (!empty($statusFilter)) {
 }
 
 if (!empty($searchQuery)) {
-    $sql .= " AND (a.client_name LIKE ? OR a.project_address LIKE ? OR a.assessment_number LIKE ?)";
+    $sql .= " AND (a.client_name LIKE ? OR a.project_name LIKE ? OR a.project_address LIKE ? OR a.assessment_number LIKE ? OR a.client_phone LIKE ?)";
     $like = "%{$searchQuery}%";
+    $params[] = $like;
+    $params[] = $like;
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
@@ -55,7 +59,7 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
     ob_start();
     if (empty($assessments)): ?>
         <tr>
-            <td colspan="7" class="py-10 text-center text-slate-400">
+            <td colspan="6" class="py-10 text-center text-slate-400">
                 <?php if (!empty($searchQuery)): ?>
                     No assessments found matching "<span class="text-slate-200 font-semibold"><?= htmlspecialchars($searchQuery) ?></span>".
                 <?php else: ?>
@@ -85,25 +89,46 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
 
             $sla = getAssessmentSlaStatus($ass);
         ?>
-            <tr class="hover:bg-[#1a3a5c]/40 transition-colors">
+            <tr id="assessment-row-<?= (int)$ass['id'] ?>" class="hover:bg-[#1a3a5c]/40 transition-colors">
+                <!-- 1. Ref / Client Name -->
                 <td class="py-3.5 px-4">
                     <div class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($ass['assessment_number']) ?></div>
                     <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" class="font-bold text-sm text-slate-100 hover:text-[#c9a84c] transition-colors">
                         <?= htmlspecialchars($ass['client_name']) ?>
                     </a>
                 </td>
-                <td class="py-3.5 px-4 text-slate-300 max-w-xs truncate">
-                    <?= htmlspecialchars($ass['project_address']) ?>
+
+                <!-- 2. Project Name -->
+                <td class="py-3.5 px-4 text-slate-200 font-medium max-w-xs truncate" title="<?= htmlspecialchars($ass['project_name'] ?: '—') ?>">
+                    <div class="flex items-center gap-2">
+                        <span><?= htmlspecialchars($ass['project_name'] ?: '—') ?></span>
+                    </div>
                 </td>
-                <td class="py-3.5 px-4 text-center">
-                    <span class="px-2.5 py-1 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold border border-[#234d7a]">
-                        P<?= $ass['current_phase'] ?>
-                    </span>
+
+                <!-- 3. Contact -->
+                <td class="py-3.5 px-4 text-slate-300">
+                    <div class="font-medium"><?= htmlspecialchars($ass['client_phone'] ?: '—') ?></div>
+                    <?php if (!empty($ass['client_email'])): ?>
+                        <div class="text-[11px] text-slate-400 truncate max-w-[170px]" title="<?= htmlspecialchars($ass['client_email']) ?>"><?= htmlspecialchars($ass['client_email']) ?></div>
+                    <?php endif; ?>
                 </td>
+
+                <!-- 4. Updated By -->
+                <td class="py-3.5 px-4 text-slate-300">
+                    <div class="font-medium text-slate-200"><?= htmlspecialchars($ass['last_updated_by_name'] ?? $ass['assessor_name'] ?? 'System') ?></div>
+                    <div class="text-[10px] text-slate-400 font-mono"><?= formatDate($ass['updated_at'], 'M j, Y H:i') ?></div>
+                </td>
+
+                <!-- 5. Status / Gate (Shifted to second last, before action) -->
                 <td class="py-3.5 px-4">
-                    <span class="px-2.5 py-1 rounded text-[11px] font-semibold border inline-block <?= $badgeClass ?>">
-                        <?= $statusLabel ?>
-                    </span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="px-2.5 py-1 rounded text-[11px] font-semibold border inline-block <?= $badgeClass ?>">
+                            <?= $statusLabel ?>
+                        </span>
+                        <span class="px-2 py-0.5 rounded bg-[#1a3a5c] text-[#c9a84c] font-bold text-[10px] border border-[#234d7a]">
+                            P<?= $ass['current_phase'] ?>
+                        </span>
+                    </div>
                     <?php if ($ass['hold_deadline_date'] && $status === 'HOLD'): ?>
                         <div class="text-[10px] text-slate-400 mt-1">Due: <?= formatDate($ass['hold_deadline_date']) ?></div>
                     <?php endif; ?>
@@ -113,12 +138,8 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                         </div>
                     <?php endif; ?>
                 </td>
-                <td class="py-3.5 px-4 text-slate-300">
-                    <?= htmlspecialchars($ass['assessor_name'] ?? 'System') ?>
-                </td>
-                <td class="py-3.5 px-4 text-slate-400 text-[11px]">
-                    <?= formatDate($ass['updated_at'], 'M j, Y H:i') ?>
-                </td>
+
+                <!-- 6. Actions (Mini Menu) -->
                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                     <div class="relative inline-block text-left row-action-dropdown">
                         <button type="button"
@@ -163,6 +184,16 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                                 <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
                                 <span>Download PDF</span>
                             </a>
+
+                            <div class="border-t border-[#1e3e68] my-1"></div>
+
+                            <!-- Delete Assessment -->
+                            <button type="button"
+                                onclick="deleteAssessment(event, <?= (int)$ass['id'] ?>, '<?= htmlspecialchars(addslashes($ass['assessment_number']), ENT_QUOTES) ?>')"
+                                class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/40 flex items-center gap-2.5 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-trash-can text-red-400 text-sm"></i>
+                                <span>Delete Assessment</span>
+                            </button>
                         </div>
                     </div>
                 </td>
@@ -184,7 +215,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 }
 
 // Counts for filter pills
-$countsStmt = $pdo->query("SELECT status, COUNT(*) as cnt FROM assessments GROUP BY status");
+$countsStmt = $pdo->query("SELECT status, COUNT(*) as cnt FROM assessments WHERE (is_deleted = 0 OR is_deleted IS NULL) GROUP BY status");
 $statusCounts = [
     'ALL' => 0,
     'IN_PROGRESS' => 0,
@@ -294,11 +325,10 @@ require_once __DIR__ . '/../components/header.php';
                 <thead>
                     <tr class="border-b border-[#1e3e68] bg-[#0a172c]/80 text-slate-400 uppercase tracking-wider">
                         <th class="py-3.5 px-4 font-semibold">Ref / Client</th>
-                        <th class="py-3.5 px-4 font-semibold">Project Location</th>
-                        <th class="py-3.5 px-4 font-semibold text-center">Phase</th>
+                        <th class="py-3.5 px-4 font-semibold">Project Name</th>
+                        <th class="py-3.5 px-4 font-semibold">Contact</th>
+                        <th class="py-3.5 px-4 font-semibold">Updated By</th>
                         <th class="py-3.5 px-4 font-semibold">Status / Gate</th>
-                        <th class="py-3.5 px-4 font-semibold">Assessor</th>
-                        <th class="py-3.5 px-4 font-semibold">Updated</th>
                         <th class="py-3.5 px-4 font-semibold text-right">Actions</th>
                     </tr>
                 </thead>
@@ -457,6 +487,52 @@ require_once __DIR__ . '/../components/header.php';
 
         if (targetMenu) {
             targetMenu.classList.toggle('hidden');
+        }
+    };
+
+    // Global Delete Assessment Handler
+    window.deleteAssessment = async function(e, id, assessmentNumber) {
+        if (e) e.stopPropagation();
+
+        const targetMenu = document.getElementById(`row-dropdown-${id}`);
+        if (targetMenu) targetMenu.classList.add('hidden');
+
+        const confirmed = confirm(`Are you sure you want to delete assessment ${assessmentNumber}?\nThis will mark the assessment as deleted.`);
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/ufc_v1/api/delete_assessment.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    assessment_id: id
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const row = document.getElementById(`assessment-row-${id}`);
+                if (row) {
+                    row.style.transition = 'all 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        row.remove();
+                        const remaining = document.querySelectorAll('#assessments-table-body tr');
+                        if (remaining.length === 0) {
+                            location.reload();
+                        }
+                    }, 300);
+                }
+            } else {
+                alert(data.error || 'Failed to delete assessment.');
+            }
+        } catch (err) {
+            console.error('Delete assessment error:', err);
+            alert('An error occurred while deleting the assessment.');
         }
     };
 

@@ -113,6 +113,9 @@ function ensureCheckReportColumns(PDO $pdo): void
         if (!isset($existingCols['last_updated_by_user_id'])) {
             $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `last_updated_by_user_id` INT UNSIGNED NULL DEFAULT NULL AFTER `checkpoint_final_bid_at`");
         }
+        if (!isset($existingCols['is_deleted'])) {
+            $pdo->exec("ALTER TABLE `assessments` ADD COLUMN `is_deleted` TINYINT(1) NOT NULL DEFAULT 0 AFTER `last_updated_by_user_id`");
+        }
 
         // Check and migrate phases table (weight, threshold)
         $phaseColsStmt = $pdo->query("SHOW COLUMNS FROM `phases`");
