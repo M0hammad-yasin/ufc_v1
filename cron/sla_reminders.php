@@ -52,20 +52,13 @@ foreach ($assessments as $ass) {
     $processedCount++;
     $assessmentId = (int)$ass['id'];
 
-    // Check if all 4 milestone checkboxes are checked (if so, timer is stopped)
-    $chk1 = (bool)($ass['checkpoint_pre_assessment'] ?? 0);
-    $chk2 = (bool)($ass['checkpoint_client_meetup'] ?? 0);
-    $chk3 = (bool)($ass['checkpoint_build_proposal'] ?? 0);
-    $chk4 = (bool)($ass['checkpoint_final_bid'] ?? 0);
-    if ($chk1 && $chk2 && $chk3 && $chk4) {
-        continue; // Timer is completed
+    // Check if tracker is active in assessment_trackers
+    $tracker = getAssessmentTracker($assessmentId, $pdo);
+    if (!$tracker || !$tracker['is_active']) {
+        continue; // Timer is stopped or not started
     }
 
-    $p1Time = strtotime($ass['phase_1_completed_at']);
-    if (!$p1Time) continue;
-
-    $nowTime = time();
-    $daysElapsed = (int)floor(($nowTime - $p1Time) / 86400);
+    $daysElapsed = (int)$tracker['days_elapsed'];
 
     // Auto send email after every 3 days (e.g. Day 3, 6, 9, 12, 15...)
     if ($daysElapsed > 0 && ($daysElapsed % 3 === 0)) {

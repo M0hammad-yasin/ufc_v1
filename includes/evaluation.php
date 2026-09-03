@@ -537,6 +537,7 @@ function updateAssessmentOverallStatus(int $assessmentId, int $phaseNumber, stri
                 WHERE `id` = ?
             ");
             $stmt->execute([$currentUserId, $assessmentId]);
+            startAssessmentTracker($assessmentId, $pdo);
         } elseif ($phaseNumber < 4) {
             $nextPhase = $phaseNumber + 1;
             $stmt = $pdo->prepare("

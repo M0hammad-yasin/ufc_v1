@@ -4,6 +4,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `assessment_trackers`;
 DROP TABLE IF EXISTS `email_logs`;
 DROP TABLE IF EXISTS `assessment_history`;
 DROP TABLE IF EXISTS `follow_up_tasks`;
@@ -259,4 +260,21 @@ CREATE TABLE `email_logs` (
     INDEX (`email_type`),
     INDEX (`sent_at`),
     FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. Assessment Lifecycle Tracker (14-Day Timer)
+CREATE TABLE `assessment_trackers` (
+    `id`               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `assessment_id`    INT UNSIGNED NOT NULL UNIQUE,
+    `status`           ENUM('ASSESSMENT_COMPLETED','DISCARDED','REJECTED','NOT_FIT') NULL DEFAULT NULL,
+    `timer_started_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `first_started_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `timer_cycles`     TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `stopped_at`       DATETIME     NULL DEFAULT NULL,
+    `created_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX (`assessment_id`),
+    INDEX (`status`),
+    INDEX (`timer_started_at`),
+    FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

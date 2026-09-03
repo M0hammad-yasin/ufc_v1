@@ -22,10 +22,10 @@ try {
         "INSERT INTO `tiers` (`name`, `description`, `color`, `sort_order`) VALUES (?, ?, ?, ?)"
     );
     $tiers = [
-        ['Tier 1 — Strategic / Full-Scope',   'Large, complex, multi-phase projects requiring full UFC engagement.',    '#c9a84c', 1],
-        ['Tier 2 — Mid-Market / Standard',    'Standard commercial or residential projects with typical complexity.',   '#3b82f6', 2],
-        ['Tier 3 — Small / Streamlined',      'Smaller, well-defined scopes with limited assessment overhead.',         '#4ade80', 3],
-        ['Tier 4 — Legacy / Non-Standard',    'Projects outside normal criteria — requires CEO review.',                '#f87171', 4],
+        ['Tier 1 ',   'Large, complex, multi-phase projects requiring full UFC engagement.',    '#c9a84c', 1],
+        ['Tier 2 ',    'Standard commercial or residential projects with typical complexity.',   '#3b82f6', 2],
+        ['Tier 3 ',      'Smaller, well-defined scopes with limited assessment overhead.',         '#4ade80', 3],
+        ['Tier 4 ',    'Projects outside normal criteria — requires CEO review.',                '#f87171', 4],
     ];
     foreach ($tiers as $t) {
         $stmtTier->execute($t);

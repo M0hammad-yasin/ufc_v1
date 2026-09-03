@@ -70,15 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ── Phase overview boxes (from questions.php global $PHASES if available) ──
 $phaseBoxes = '';
 $phaseLabels = [
-    'Client &<br>Financial',
-    'Technical<br>Feasibility',
-    'Financial<br>Architecture',
-    'Legal &<br>Compliance',
-    'Execution<br>Risk',
-    'Internal<br>Controls',
-    'Strategic<br>Value',
+    'DOCUMENT READINESS',
+    'FINANCIAL CAPACITY AND CLIENT COMMITMENT',
+    'PROPERTY AND LEGAL STANDING',
+    'UFC DUE DILIGENCE AND FIT',
 ];
-for ($i = 1; $i <= 7; $i++) {
+for ($i = 1; $i <= 4; $i++) {
     $label = $phaseLabels[$i - 1] ?? "Phase {$i}";
     $phaseBoxes .= "
         <div class='flex flex-col items-center'>
@@ -251,7 +248,7 @@ require_once __DIR__ . '/../components/header.php';
             </form>
 
             <!-- Phase overview grid -->
-            <div class="grid grid-cols-7 gap-2 mt-8">
+            <div class="grid grid-cols-4 gap-2 mt-8">
                 <?= $phaseBoxes ?>
             </div>
 

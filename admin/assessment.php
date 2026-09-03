@@ -246,7 +246,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                         $dispThresh = (!empty($p['threshold'])) ? (((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold']) : null;
                         ?>
                         <?php if ($pRes): ?>
-                            <span class="text-xs font-semibold text-slate-300">Score: <?= $pRes['score_earned'] ?>/<?= $pRes['score_possible'] ?> (<?= $pRes['score_percent'] ?>%)</span>
+                            <span class="text-xs font-semibold text-slate-300">Score: <?= $pRes['score_percent'] ?>%</span>
                             <?php if ($dispThresh !== null): ?>
                                 <span class="text-[10px] font-mono text-slate-400 border border-slate-700 rounded px-1.5 py-0.5">
                                     Pass ≥ <?= number_format($dispThresh, 1) ?>% · Weight <?= number_format((float)$p['weight'] * 100, 1) ?>%

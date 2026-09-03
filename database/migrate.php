@@ -1,4 +1,5 @@
 <?php
+
 /**
  * database/migrate.php
  * ─────────────────────────────────────────────────────────────────────────────
@@ -21,7 +22,8 @@ if (!$isCli) {
     echo "<h2>UFC Database Migration Runner</h2><pre>";
 }
 
-function outputMsg(string $msg, string $type = 'info'): void {
+function outputMsg(string $msg, string $type = 'info'): void
+{
     global $isCli;
     if ($isCli) {
         echo "[{$type}] {$msg}\n";
@@ -111,7 +113,7 @@ try {
     // Populate standard weights & thresholds for all 4 phases (100% based)
     $phaseConfig = [
         1 => ['weight' => 0.200, 'threshold' => 65.00],
-        2 => ['weight' => 0.150, 'threshold' => 60.00],
+        2 => ['weight' => 0.150, 'threshold' => 65.00],
         3 => ['weight' => 0.220, 'threshold' => 65.00],
         4 => ['weight' => 0.180, 'threshold' => 65.00],
     ];
@@ -122,8 +124,27 @@ try {
         outputMsg("Updated Phase {$pNum}: weight={$cfg['weight']}, threshold={$cfg['threshold']}", "info");
     }
 
-    outputMsg("Database migration completed successfully! All tables, columns, and phase metrics are up to date.", "success");
+    // 5. Ensure assessment_trackers table exists
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `assessment_trackers` (
+            `id`               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `assessment_id`    INT UNSIGNED NOT NULL UNIQUE,
+            `status`           ENUM('ASSESSMENT_COMPLETED','DISCARDED','REJECTED') NULL DEFAULT NULL,
+            `timer_started_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `first_started_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `timer_cycles`     TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            `stopped_at`       DATETIME     NULL DEFAULT NULL,
+            `created_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX (`assessment_id`),
+            INDEX (`status`),
+            INDEX (`timer_started_at`),
+            FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    outputMsg("Ensured table: assessment_trackers", "success");
 
+    outputMsg("Database migration completed successfully! All tables, columns, and phase metrics are up to date.", "success");
 } catch (Exception $e) {
     outputMsg("Migration Error: " . $e->getMessage(), "info");
 }
