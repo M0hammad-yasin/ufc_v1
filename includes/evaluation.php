@@ -63,13 +63,14 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $val = strtoupper(trim((string)$rawAnswer));
             $result['answer_value'] = $val;
 
-            if ($val === 'NOT_APPLICABLE') {
-                // NA removes question from both score and denominator
+            if ($val === 'NOT_APPLICABLE' || $val === 'NA') {
+                // NA removes question from both score and denominator, and must NOT be counted as AMBER
                 $result['score'] = 0.00;
                 $result['points_possible'] = 0.00;
-                $result['status_light'] = 'AMBER';
+                $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
                 $result['require_explain'] = false; // Requires na_justification separately
+                $result['is_applicable'] = 0;
             } else {
                 $isFavorable = $isReversed ? ($val === 'NO') : ($val === 'YES');
                 if ($isFavorable) {
@@ -128,6 +129,16 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $result['answer_value'] = $val;
             $result['points_possible'] = 10.00;
 
+            if (strtoupper($val) === 'NOT_APPLICABLE' || strtoupper($val) === 'NA') {
+                $result['score'] = 0.00;
+                $result['points_possible'] = 0.00;
+                $result['status_light'] = 'GREEN';
+                $result['trigger_fired'] = 'NONE';
+                $result['require_explain'] = false;
+                $result['is_applicable'] = 0;
+                break;
+            }
+
             // Check options for 1.1 and 2.2
             if ($qNum === '1.1') {
                 if (in_array($val, ['APPROVED_NO_PERMIT', 'APPROVED_PERMIT_ISSUED'], true)) {
@@ -173,6 +184,10 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $checked = is_array($rawAnswer) ? $rawAnswer : (json_decode((string)$rawAnswer, true) ?: []);
             $notRequired = $checklistContext['not_required'] ?? [];
 
+            // Mutual exclusion: an item cannot be both checked and not applicable
+            $checked = array_values(array_diff($checked, $notRequired));
+            $notRequired = array_values($notRequired);
+
             $options = getQuestionOptions((int)$question['id']);
             $applicableOptions = [];
             foreach ($options as $opt) {
@@ -183,31 +198,39 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
 
             $totalApplicable = count($applicableOptions);
             $checkedApplicable = 0;
+            $uncheckedApplicable = [];
             foreach ($applicableOptions as $optKey) {
                 if (in_array($optKey, $checked, true)) {
                     $checkedApplicable++;
+                } else {
+                    $uncheckedApplicable[] = $optKey;
                 }
             }
 
             $result['points_possible'] = 10.00;
             if ($totalApplicable === 0) {
+                // All items marked not applicable/not required
                 $result['score'] = 10.00;
                 $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
+                $result['require_explain'] = false;
             } else {
                 $result['score'] = round(10.00 * ($checkedApplicable / $totalApplicable), 2);
-                if ($checkedApplicable === $totalApplicable) {
+                if (empty($uncheckedApplicable)) {
+                    // All applicable items are checked (none are both unchecked)
                     $result['status_light'] = 'GREEN';
                     $result['trigger_fired'] = 'NONE';
+                    $result['require_explain'] = false;
                 } else {
+                    // At least one item is unchecked and applicable (both unchecked)
                     $result['status_light'] = 'RED';
                     $result['trigger_fired'] = 'HOLD';
                     $result['require_explain'] = true;
                 }
             }
             $result['answer_value'] = json_encode([
-                'checked' => array_values($checked),
-                'not_required' => array_values($notRequired)
+                'checked' => $checked,
+                'not_required' => $notRequired
             ]);
             break;
     }
@@ -231,10 +254,11 @@ function saveAnswerAndEvaluate(int $assessmentId, int $questionId, array $data, 
     $eval = evaluateQuestionAnswer($question, $rawAnswer, $naJustification, $checklistContext);
 
     // Save answer
+    $isApplicable = isset($eval['is_applicable']) ? (int)$eval['is_applicable'] : 1;
     $stmt = $pdo->prepare("
         INSERT INTO `assessment_answers` 
         (`assessment_id`, `question_id`, `answer_value`, `na_justification`, `score`, `points_possible`, `status_light`, `trigger_fired`, `is_applicable`, `updated_by_user_id`)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
         `answer_value` = VALUES(`answer_value`),
         `na_justification` = VALUES(`na_justification`),
@@ -254,6 +278,7 @@ function saveAnswerAndEvaluate(int $assessmentId, int $questionId, array $data, 
         $eval['points_possible'],
         $eval['status_light'],
         $eval['trigger_fired'],
+        $isApplicable,
         $userId
     ]);
 
@@ -263,49 +288,58 @@ function saveAnswerAndEvaluate(int $assessmentId, int $questionId, array $data, 
         $stmtUpd->execute([$userId, $assessmentId]);
     }
 
-    // Handle Explain Block if provided
-    if (!empty($data['explain_reason'])) {
-        $reason = trim((string)$data['explain_reason']);
-        $respParty = trim((string)($data['explain_responsible_party'] ?? 'CLIENT'));
-        $cureDate = !empty($data['explain_target_cure_date']) ? trim((string)$data['explain_target_cure_date']) : date('Y-m-d', strtotime('+30 days'));
+    // Handle Explain Block: only save when question requires explanation
+    if (!empty($eval['require_explain'])) {
+        if (!empty($data['explain_reason'])) {
+            $reason = trim((string)$data['explain_reason']);
+            $respParty = trim((string)($data['explain_responsible_party'] ?? 'CLIENT'));
+            $cureDate = !empty($data['explain_target_cure_date']) ? trim((string)$data['explain_target_cure_date']) : date('Y-m-d', strtotime('+30 days'));
 
-        $stmtExp = $pdo->prepare("
-            INSERT INTO `explain_blocks` (`assessment_id`, `question_id`, `reason`, `responsible_party`, `target_cure_date`)
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-            `reason` = VALUES(`reason`),
-            `responsible_party` = VALUES(`responsible_party`),
-            `target_cure_date` = VALUES(`target_cure_date`)
-        ");
-        $stmtExp->execute([
-            $assessmentId,
-            $questionId,
-            $reason,
-            $respParty,
-            $cureDate
-        ]);
-        $explainBlockId = $pdo->lastInsertId() ?: getExplainBlockId($assessmentId, $questionId);
-
-        // Create or update follow-up task
-        if ($explainBlockId) {
-            $stmtTask = $pdo->prepare("
-                INSERT INTO `follow_up_tasks` (`assessment_id`, `explain_block_id`, `question_id`, `title`, `responsible_party`, `target_cure_date`, `status`)
-                VALUES (?, ?, ?, ?, ?, ?, 'OPEN')
+            $stmtExp = $pdo->prepare("
+                INSERT INTO `explain_blocks` (`assessment_id`, `question_id`, `reason`, `responsible_party`, `target_cure_date`)
+                VALUES (?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
-                `title` = VALUES(`title`),
+                `reason` = VALUES(`reason`),
                 `responsible_party` = VALUES(`responsible_party`),
                 `target_cure_date` = VALUES(`target_cure_date`)
             ");
-            $taskTitle = "Resolve {$question['question_number']} deficiency: " . substr($reason, 0, 60);
-            $stmtTask->execute([
+            $stmtExp->execute([
                 $assessmentId,
-                $explainBlockId,
                 $questionId,
-                $taskTitle,
+                $reason,
                 $respParty,
                 $cureDate
             ]);
+            $explainBlockId = $pdo->lastInsertId() ?: getExplainBlockId($assessmentId, $questionId);
+
+            // Create or update follow-up task
+            if ($explainBlockId) {
+                $stmtTask = $pdo->prepare("
+                    INSERT INTO `follow_up_tasks` (`assessment_id`, `explain_block_id`, `question_id`, `title`, `responsible_party`, `target_cure_date`, `status`)
+                    VALUES (?, ?, ?, ?, ?, ?, 'OPEN')
+                    ON DUPLICATE KEY UPDATE
+                    `title` = VALUES(`title`),
+                    `responsible_party` = VALUES(`responsible_party`),
+                    `target_cure_date` = VALUES(`target_cure_date`)
+                ");
+                $taskTitle = "Resolve {$question['question_number']} deficiency: " . substr($reason, 0, 60);
+                $stmtTask->execute([
+                    $assessmentId,
+                    $explainBlockId,
+                    $questionId,
+                    $taskTitle,
+                    $respParty,
+                    $cureDate
+                ]);
+            }
         }
+    } else {
+        // When question no longer requires explanation, clean up any existing explain block and follow-up tasks
+        $stmtDelExp = $pdo->prepare("DELETE FROM `explain_blocks` WHERE `assessment_id` = ? AND `question_id` = ?");
+        $stmtDelExp->execute([$assessmentId, $questionId]);
+
+        $stmtDelTask = $pdo->prepare("DELETE FROM `follow_up_tasks` WHERE `assessment_id` = ? AND `question_id` = ?");
+        $stmtDelTask->execute([$assessmentId, $questionId]);
     }
 
     logAudit($assessmentId, "ANSWER_SAVED", [
@@ -364,6 +398,9 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
             continue;
         }
 
+        $ansVal = strtoupper(trim((string)$ans['answer_value']));
+        $isNotApplicable = ($ansVal === 'NOT_APPLICABLE' || $ansVal === 'NA' || (isset($ans['is_applicable']) && (int)$ans['is_applicable'] === 0));
+
         $totalScoreEarned += (float)$ans['score'];
         $totalScorePossible += (float)$ans['points_possible'];
 
@@ -371,8 +408,11 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
             $redCount++;
             $redItems[] = $q;
         } elseif ($ans['status_light'] === 'AMBER') {
-            $amberCount++;
-            $amberItems[] = $q;
+            // Options marked not applicable must NOT increase the amber count
+            if (!$isNotApplicable) {
+                $amberCount++;
+                $amberItems[] = $q;
+            }
         }
 
         if ($ans['trigger_fired'] === 'STOP') {

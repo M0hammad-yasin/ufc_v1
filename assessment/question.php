@@ -255,22 +255,22 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     $notReqKeys = $decodedAns['not_required'] ?? [];
                     ?>
                     <div class="space-y-3">
-                        <div class="text-xs text-slate-400 mb-2">Check all completed and issued disciplines. Toggle "Not required" for disciplines not in project scope.</div>
+                        <div class="text-xs text-slate-400 mb-2">Check all completed and issued disciplines. Toggle "Not applicable" for disciplines not in project scope.</div>
                         <?php foreach ($options as $opt):
                             $isChecked = in_array($opt['option_key'], $checkedKeys, true);
                             $isNotReq = in_array($opt['option_key'], $notReqKeys, true);
                         ?>
-                            <div class="p-3.5 rounded-xl border border-[#1e3e68] bg-[#060f1e] flex flex-col sm:flex-row sm:items-center justify-between gap-3 checklist-item">
-                                <label class="flex items-center cursor-pointer">
+                            <div class="p-3.5 rounded-xl border border-[#1e3e68] bg-[#060f1e] flex flex-col sm:flex-row sm:items-center justify-between gap-3 checklist-item" data-key="<?= htmlspecialchars($opt['option_key']) ?>">
+                                <label class="flex items-center cursor-pointer select-none">
                                     <input type="checkbox" name="checklist_checked[]" value="<?= htmlspecialchars($opt['option_key']) ?>" <?= $isChecked ? 'checked' : '' ?>
-                                        class="w-4 h-4 text-[#c9a84c] rounded border-[#1e3e68] bg-[#0d1f3c] focus:ring-[#c9a84c]" onchange="handleChecklistChange()">
+                                        class="w-4 h-4 text-[#c9a84c] rounded border-[#1e3e68] bg-[#0d1f3c] focus:ring-[#c9a84c] checklist-chk" onchange="handleChecklistToggle(this, 'checked')">
                                     <span class="ml-3 text-sm font-medium text-slate-200"><?= htmlspecialchars($opt['option_label']) ?></span>
                                 </label>
 
-                                <label class="flex items-center text-xs text-slate-400 cursor-pointer ml-7 sm:ml-0">
+                                <label class="flex items-center text-xs text-slate-400 cursor-pointer ml-7 sm:ml-0 select-none">
                                     <input type="checkbox" name="not_required[]" value="<?= htmlspecialchars($opt['option_key']) ?>" <?= $isNotReq ? 'checked' : '' ?>
-                                        class="w-3.5 h-3.5 text-slate-500 rounded border-[#1e3e68] bg-[#0d1f3c]" onchange="handleChecklistChange()">
-                                    <span class="ml-2">Not required for scope</span>
+                                        class="w-3.5 h-3.5 text-slate-500 rounded border-[#1e3e68] bg-[#0d1f3c] checklist-na" onchange="handleChecklistToggle(this, 'not_required')">
+                                    <span class="ml-2">Not applicable</span>
                                 </label>
                             </div>
                         <?php endforeach; ?>
@@ -278,8 +278,28 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 <?php endif; ?>
             </div>
 
+            <?php
+            $isExplainVisible = false;
+            if ($existingAnswer) {
+                if ($question['response_type'] === 'MULTI_SELECT') {
+                    $decodedAns = !empty($existingAnswer['answer_value']) ? json_decode($existingAnswer['answer_value'], true) : [];
+                    $chkKeys = $decodedAns['checked'] ?? [];
+                    $nrKeys = $decodedAns['not_required'] ?? [];
+                    foreach ($options as $opt) {
+                        $isC = in_array($opt['option_key'], $chkKeys, true);
+                        $isN = in_array($opt['option_key'], $nrKeys, true);
+                        if (!$isC && !$isN) {
+                            $isExplainVisible = true;
+                            break;
+                        }
+                    }
+                } else {
+                    $isExplainVisible = ($existingAnswer['status_light'] === 'RED');
+                }
+            }
+            ?>
             <!-- EXPLAIN BLOCK COMPONENT -->
-            <div id="explainBlockContainer" class="p-6 rounded-xl bg-[#081528] border-2 border-[#c9a84c]/60 shadow-xl space-y-4 <?= ($existingAnswer && $existingAnswer['status_light'] === 'RED') ? '' : 'hidden' ?>">
+            <div id="explainBlockContainer" class="p-6 rounded-xl bg-[#081528] border-2 border-[#c9a84c]/60 shadow-xl space-y-4 <?= $isExplainVisible ? '' : 'hidden' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-[#1e3e68]">
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-[#f87171] animate-pulse"></span>
@@ -460,30 +480,93 @@ require_once __DIR__ . '/../components/phase-nav.php';
         }
     }
 
-    function handleChecklistChange() {
-        const checked = document.querySelectorAll('input[name="checklist_checked[]"]:checked').length;
-        const total = document.querySelectorAll('input[name="checklist_checked[]"]').length;
-        const explainBox = document.getElementById('explainBlockContainer');
-
-        if (checked < total) {
-            if (explainBox) explainBox.classList.remove('hidden');
-        } else {
-            if (explainBox) explainBox.classList.add('hidden');
+    function handleChecklistToggle(inputEl, type) {
+        if (inputEl && inputEl.checked) {
+            const row = inputEl.closest('.checklist-item');
+            if (row) {
+                if (type === 'checked') {
+                    const naBox = row.querySelector('input[name="not_required[]"]');
+                    if (naBox && naBox.checked) {
+                        naBox.checked = false;
+                    }
+                } else if (type === 'not_required') {
+                    const chkBox = row.querySelector('input[name="checklist_checked[]"]');
+                    if (chkBox && chkBox.checked) {
+                        chkBox.checked = false;
+                    }
+                }
+            }
         }
+        updateExplainVisibilityForChecklist();
+    }
+
+    function updateExplainVisibilityForChecklist() {
+        const explainBox = document.getElementById('explainBlockContainer');
+        if (!explainBox) return;
+
+        let hasUncheckedApplicable = false;
+        document.querySelectorAll('.checklist-item').forEach(row => {
+            const chk = row.querySelector('input[name="checklist_checked[]"]');
+            const na = row.querySelector('input[name="not_required[]"]');
+            const isChecked = chk ? chk.checked : false;
+            const isNotReq = na ? na.checked : false;
+
+            // Only show requirement block if an item is unchecked and applicable (both unchecked)
+            if (!isChecked && !isNotReq) {
+                hasUncheckedApplicable = true;
+            }
+        });
+
+        if (hasUncheckedApplicable) {
+            explainBox.classList.remove('hidden');
+        } else {
+            explainBox.classList.add('hidden');
+        }
+    }
+
+    function handleChecklistChange() {
+        updateExplainVisibilityForChecklist();
     }
 
     // Client-side Validation on Submit
     document.getElementById('questionForm').addEventListener('submit', function(e) {
+        const qType = "<?= $question['response_type'] ?>";
         const explainBox = document.getElementById('explainBlockContainer');
-        if (explainBox && !explainBox.classList.contains('hidden')) {
-            const reasonInput = document.getElementById('explain_reason');
-            if (reasonInput && reasonInput.value.trim().length < 20) {
-                e.preventDefault();
-                alert("The Explain Block requires a minimum 20-character explanation for this item.");
-                reasonInput.focus();
-                return false;
+
+        if (qType === 'MULTI_SELECT') {
+            let hasUncheckedApplicable = false;
+            document.querySelectorAll('.checklist-item').forEach(row => {
+                const chk = row.querySelector('input[name="checklist_checked[]"]');
+                const na = row.querySelector('input[name="not_required[]"]');
+                const isChecked = chk ? chk.checked : false;
+                const isNotReq = na ? na.checked : false;
+                if (!isChecked && !isNotReq) {
+                    hasUncheckedApplicable = true;
+                }
+            });
+
+            if (hasUncheckedApplicable) {
+                if (explainBox) explainBox.classList.remove('hidden');
+                const reasonInput = document.getElementById('explain_reason');
+                if (reasonInput && reasonInput.value.trim().length < 20) {
+                    e.preventDefault();
+                    alert("The Explain Block requires a minimum 20-character explanation for missing disciplines.");
+                    reasonInput.focus();
+                    return false;
+                }
+            }
+        } else {
+            if (explainBox && !explainBox.classList.contains('hidden')) {
+                const reasonInput = document.getElementById('explain_reason');
+                if (reasonInput && reasonInput.value.trim().length < 20) {
+                    e.preventDefault();
+                    alert("The Explain Block requires a minimum 20-character explanation for this item.");
+                    reasonInput.focus();
+                    return false;
+                }
             }
         }
+
         const naBox = document.getElementById('na_justification_block');
         if (naBox && !naBox.classList.contains('hidden')) {
             const naInput = document.getElementById('na_justification_input');
