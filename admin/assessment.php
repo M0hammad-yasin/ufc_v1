@@ -297,8 +297,10 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                                         <td class="py-2 px-2 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
                                         <td class="py-2 px-2 text-slate-200 max-w-sm"><?= htmlspecialchars($q['question_text']) ?></td>
                                         <td class="py-2 px-2 text-slate-400"><?= $q['owner'] ?></td>
-                                        <td class="py-2 px-2 font-semibold text-slate-200">
-                                            <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
+                                        <td class="py-2 px-2 max-w-[220px]">
+                                            <span class="text-xs font-normal text-slate-200 leading-snug break-words">
+                                                <?= htmlspecialchars(formatAnswerValue($ans['answer_value'] ?? null, $q)) ?>
+                                            </span>
                                             <?php if (isset($evidenceFilesMap[$q['id']])):
                                                 $ef = $evidenceFilesMap[$q['id']];
                                             ?>

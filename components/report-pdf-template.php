@@ -849,7 +849,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                             <?php foreach ($qs as $q):
                                 $light = $q['status_light'] ?? 'PENDING';
                                 $lightClass = ($light === 'GREEN') ? 'light-green' : (($light === 'AMBER') ? 'light-amber' : (($light === 'RED') ? 'light-red' : ''));
-                                $ansDisplay = is_array($q['answer_value'] ?? '') ? 'Checklist' : (string)($q['answer_value'] ?? '—');
+                                $ansDisplay = formatAnswerValue($q['answer_value'] ?? null, $q);
                                 if (strlen($ansDisplay) > 28) {
                                     $ansDisplay = substr($ansDisplay, 0, 25) . '...';
                                 }

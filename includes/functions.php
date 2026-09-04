@@ -304,3 +304,48 @@ function startAssessmentTracker(int $assessmentId, ?PDO $pdo = null): void
         logAudit($assessmentId, 'TRACKER_AUTO_STARTED', ['started_at' => $now]);
     }
 }
+
+/**
+ * Formats an assessment question answer for display in tables and reports.
+ * For multi-select checklists, displays only checked items as clean plain text.
+ */
+function formatAnswerValue($rawAnswer, ?array $question = null): string
+{
+    if ($rawAnswer === null || $rawAnswer === '') {
+        return '—';
+    }
+
+    $decoded = null;
+    if (is_array($rawAnswer)) {
+        $decoded = $rawAnswer;
+    } elseif (is_string($rawAnswer) && (str_starts_with(trim($rawAnswer), '{') || str_starts_with(trim($rawAnswer), '['))) {
+        $decoded = json_decode($rawAnswer, true);
+    }
+
+    if (is_array($decoded)) {
+        $checked = $decoded['checked'] ?? (isset($decoded[0]) ? $decoded : []);
+        if (empty($checked)) {
+            return 'None';
+        }
+
+        // Fetch question option labels if available
+        $optLabelMap = [];
+        if (!empty($question['id']) && function_exists('getQuestionOptions')) {
+            try {
+                $opts = getQuestionOptions((int)$question['id']);
+                foreach ($opts as $o) {
+                    $optLabelMap[$o['option_key']] = $o['option_label'];
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        $formatted = [];
+        foreach ($checked as $itemKey) {
+            $formatted[] = $optLabelMap[$itemKey] ?? ucwords(strtolower(str_replace('_', ' ', (string)$itemKey)));
+        }
+        return implode(', ', $formatted);
+    }
+
+    return (string)$rawAnswer;
+}

@@ -246,8 +246,10 @@ require_once __DIR__ . '/../components/phase-nav.php';
                             <td class="py-3 px-3 font-mono font-bold text-[#c9a84c]"><?= $q['question_number'] ?></td>
                             <td class="py-3 px-3 font-medium text-slate-200 max-w-xs"><?= htmlspecialchars($q['question_text']) ?></td>
                             <td class="py-3 px-3 text-slate-400"><?= $q['owner'] ?></td>
-                            <td class="py-3 px-3 font-semibold text-slate-200">
-                                <?= htmlspecialchars(is_array($ans['answer_value'] ?? '') ? 'Multi-select' : (string)($ans['answer_value'] ?? '—')) ?>
+                            <td class="py-3 px-3 max-w-[220px]">
+                                <span class="text-xs font-normal text-slate-200 leading-snug break-words">
+                                    <?= htmlspecialchars(formatAnswerValue($ans['answer_value'] ?? null, $q)) ?>
+                                </span>
                             </td>
                             <td class="py-3 px-3">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold <?= $statusClass ?>">
