@@ -88,7 +88,7 @@ try {
     $q1_3 = getQuestionByNumber('1.3');
     $checkedAll = ['ARCHITECTURAL', 'STRUCTURAL', 'MECHANICAL_HVAC', 'ELECTRICAL', 'PLUMBING', 'FIRE_PROTECTION', 'WRITTEN_SPECS'];
     $eval1_3 = evaluateQuestionAnswer($q1_3, $checkedAll);
-    assertTest("1.3 All checked yields GREEN and full 2.00 score", $eval1_3['status_light'] === 'GREEN' && $eval1_3['score'] == 2.0);
+    assertTest("1.3 All checked yields GREEN and full 10.00 score", $eval1_3['status_light'] === 'GREEN' && $eval1_3['score'] == 10.0);
     saveAnswerAndEvaluate($assessmentId, (int)$q1_3['id'], ['answer_value' => $checkedAll]);
 
     // 1.4: YES -> Should skip 1.5 and go to 1.6
@@ -175,7 +175,7 @@ try {
     $p4Questions = getQuestionsForPhase(4);
     foreach ($p4Questions as $q) {
         $qId = (int)$q['id'];
-        $val = ($q['response_type'] === 'SCALE_1_10') ? 9 : 'YES';
+        $val = ($q['response_type'] === 'SCALE_1_10') ? 9 : (!empty($q['is_reversed']) ? 'NO' : 'YES');
         saveAnswerAndEvaluate($assessmentId, $qId, ['answer_value' => $val]);
     }
 

@@ -25,7 +25,7 @@ try {
     // Answer all 37 questions affirmatively
     $allQuestions = $pdo->query("SELECT * FROM questions ORDER BY order_index ASC")->fetchAll();
     foreach ($allQuestions as $q) {
-        $val = 'YES';
+        $val = !empty($q['is_reversed']) ? 'NO' : 'YES';
         if ($q['question_number'] === '1.1') $val = 'APPROVED_PERMIT_ISSUED';
         if ($q['question_number'] === '2.2') $val = 'SELF_FUNDED';
         if ($q['response_type'] === 'SCALE_1_10') $val = 9;

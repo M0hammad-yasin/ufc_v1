@@ -153,13 +153,16 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 <?php if ($question['response_type'] === 'YES_NO'): ?>
                     <?php
                     $val = $existingAnswer['answer_value'] ?? '';
+                    $isReversed = !empty($question['is_reversed']);
+                    $yesClass = ($val === 'YES') ? ($isReversed ? 'border-red-500 bg-red-950/40 text-red-200' : 'border-emerald-500 bg-emerald-950/40 text-emerald-200') : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500';
+                    $noClass = ($val === 'NO') ? ($isReversed ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-red-500 bg-red-950/40 text-red-200') : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500';
                     ?>
                     <div class="grid grid-cols-2 gap-4 max-w-md">
-                        <label class="flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all <?= ($val === 'YES') ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500' ?>" id="btn-yes">
+                        <label class="flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all <?= $yesClass ?>" id="btn-yes">
                             <input type="radio" name="answer_value" value="YES" required <?= ($val === 'YES') ? 'checked' : '' ?> class="sr-only" onchange="handleAnswerChange()">
                             <span class="font-bold text-base tracking-wider">YES</span>
                         </label>
-                        <label class="flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all <?= ($val === 'NO') ? 'border-red-500 bg-red-950/40 text-red-200' : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500' ?>" id="btn-no">
+                        <label class="flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all <?= $noClass ?>" id="btn-no">
                             <input type="radio" name="answer_value" value="NO" required <?= ($val === 'NO') ? 'checked' : '' ?> class="sr-only" onchange="handleAnswerChange()">
                             <span class="font-bold text-base tracking-wider">NO</span>
                         </label>
@@ -169,14 +172,17 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     <?php
                     $val = $existingAnswer['answer_value'] ?? '';
                     $naJust = $existingAnswer['na_justification'] ?? '';
+                    $isReversed = !empty($question['is_reversed']);
+                    $yesClass = ($val === 'YES') ? ($isReversed ? 'border-red-500 bg-red-950/40 text-red-200' : 'border-emerald-500 bg-emerald-950/40 text-emerald-200') : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500';
+                    $noClass = ($val === 'NO') ? ($isReversed ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-red-500 bg-red-950/40 text-red-200') : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500';
                     ?>
                     <div class="space-y-4 max-w-lg">
                         <div class="grid grid-cols-3 gap-3">
-                            <label class="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all <?= ($val === 'YES') ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200' : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500' ?>" id="btn-yes">
+                            <label class="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all <?= $yesClass ?>" id="btn-yes">
                                 <input type="radio" name="answer_value" value="YES" required <?= ($val === 'YES') ? 'checked' : '' ?> class="sr-only" onchange="handleAnswerChange()">
                                 <span class="font-bold text-sm tracking-wider">YES</span>
                             </label>
-                            <label class="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all <?= ($val === 'NO') ? 'border-red-500 bg-red-950/40 text-red-200' : 'border-[#1e3e68] bg-[#060f1e] hover:border-slate-500' ?>" id="btn-no">
+                            <label class="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all <?= $noClass ?>" id="btn-no">
                                 <input type="radio" name="answer_value" value="NO" required <?= ($val === 'NO') ? 'checked' : '' ?> class="sr-only" onchange="handleAnswerChange()">
                                 <span class="font-bold text-sm tracking-wider">NO</span>
                             </label>
@@ -383,6 +389,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
         const naBox = document.getElementById('na_justification_block');
         const qNum = "<?= $question['question_number'] ?>";
         const triggerType = "<?= $question['trigger_type'] ?>";
+        const isReversed = <?= !empty($question['is_reversed']) ? 'true' : 'false' ?>;
 
         if (!selected) return;
         const val = selected.value;
@@ -394,13 +401,25 @@ require_once __DIR__ . '/../components/phase-nav.php';
 
         if (val === 'YES') {
             const btn = document.getElementById('btn-yes');
-            if (btn) btn.classList.add('border-emerald-500', 'bg-emerald-950/40');
-            if (explainBox) explainBox.classList.add('hidden');
+            if (btn) btn.classList.add(isReversed ? 'border-red-500' : 'border-emerald-500', isReversed ? 'bg-red-950/40' : 'bg-emerald-950/40');
+            if (explainBox) {
+                if (isReversed) {
+                    explainBox.classList.remove('hidden');
+                } else {
+                    explainBox.classList.add('hidden');
+                }
+            }
             if (naBox) naBox.classList.add('hidden');
         } else if (val === 'NO') {
             const btn = document.getElementById('btn-no');
-            if (btn) btn.classList.add('border-red-500', 'bg-red-950/40');
-            if (explainBox) explainBox.classList.remove('hidden');
+            if (btn) btn.classList.add(isReversed ? 'border-emerald-500' : 'border-red-500', isReversed ? 'bg-emerald-950/40' : 'bg-red-950/40');
+            if (explainBox) {
+                if (isReversed) {
+                    explainBox.classList.add('hidden');
+                } else {
+                    explainBox.classList.remove('hidden');
+                }
+            }
             if (naBox) naBox.classList.add('hidden');
         } else if (val === 'NOT_APPLICABLE') {
             const btn = document.getElementById('btn-na');

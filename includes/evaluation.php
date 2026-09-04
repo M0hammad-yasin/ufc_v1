@@ -11,6 +11,7 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
     $qType = $question['response_type'];
     $triggerType = $question['trigger_type'];
     $qNum = $question['question_number'];
+    $isReversed = !empty($question['is_reversed']);
 
     $result = [
         'status_light' => 'GREEN',
@@ -29,7 +30,9 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $val = strtoupper(trim((string)$rawAnswer));
             $result['answer_value'] = $val;
 
-            if ($val === 'YES') {
+            $isFavorable = $isReversed ? ($val === 'NO') : ($val === 'YES');
+
+            if ($isFavorable) {
                 $result['score'] = 10.00;
                 $result['status_light'] = 'GREEN';
                 $result['trigger_fired'] = 'NONE';
@@ -48,7 +51,7 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
                     $result['trigger_fired'] = 'ESCALATE';
                     $result['require_explain'] = true;
                 } else {
-                    // Trigger NONE (e.g. 1.8, 2.5, 2.6, 2.8, 4.4)
+                    // Trigger NONE (e.g. 1.8, 2.5, 2.6, 2.8, 4.4, 4.6)
                     $result['status_light'] = 'AMBER';
                     $result['trigger_fired'] = 'NONE';
                     $result['require_explain'] = true;
@@ -60,12 +63,7 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
             $val = strtoupper(trim((string)$rawAnswer));
             $result['answer_value'] = $val;
 
-            if ($val === 'YES') {
-                $result['score'] = 10.00;
-                $result['points_possible'] = 10.00;
-                $result['status_light'] = 'GREEN';
-                $result['trigger_fired'] = 'NONE';
-            } elseif ($val === 'NOT_APPLICABLE') {
+            if ($val === 'NOT_APPLICABLE') {
                 // NA removes question from both score and denominator
                 $result['score'] = 0.00;
                 $result['points_possible'] = 0.00;
@@ -73,15 +71,23 @@ function evaluateQuestionAnswer(array $question, $rawAnswer, ?string $naJustific
                 $result['trigger_fired'] = 'NONE';
                 $result['require_explain'] = false; // Requires na_justification separately
             } else {
-                // NO
-                $result['score'] = 0.00;
-                $result['points_possible'] = 10.00;
-                $result['status_light'] = 'RED';
-                $result['require_explain'] = true;
-                if ($triggerType === 'STOP') {
-                    $result['trigger_fired'] = 'STOP';
+                $isFavorable = $isReversed ? ($val === 'NO') : ($val === 'YES');
+                if ($isFavorable) {
+                    $result['score'] = 10.00;
+                    $result['points_possible'] = 10.00;
+                    $result['status_light'] = 'GREEN';
+                    $result['trigger_fired'] = 'NONE';
                 } else {
-                    $result['trigger_fired'] = 'HOLD';
+                    // Unfavorable
+                    $result['score'] = 0.00;
+                    $result['points_possible'] = 10.00;
+                    $result['status_light'] = 'RED';
+                    $result['require_explain'] = true;
+                    if ($triggerType === 'STOP') {
+                        $result['trigger_fired'] = 'STOP';
+                    } else {
+                        $result['trigger_fired'] = 'HOLD';
+                    }
                 }
             }
             break;

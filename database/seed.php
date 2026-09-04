@@ -97,7 +97,7 @@ try {
     echo "-> Seeded 4 Phases.\n";
 
     // 5. Seed Questions & Options
-    $stmtQ = $pdo->prepare("INSERT INTO `questions` (`phase_id`, `question_number`, `question_text`, `response_type`, `owner`, `visibility`, `trigger_type`, `client_message`, `evidence_required`, `display_condition`, `order_index`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmtQ = $pdo->prepare("INSERT INTO `questions` (`phase_id`, `question_number`, `question_text`, `response_type`, `owner`, `visibility`, `trigger_type`, `is_reversed`, `client_message`, `evidence_required`, `display_condition`, `order_index`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmtOpt = $pdo->prepare("INSERT INTO `question_options` (`question_id`, `option_key`, `option_label`, `branch_action`, `target_question_number`, `score_weight`, `order_index`) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
     $questions = [
@@ -585,6 +585,7 @@ try {
             'owner' => 'UFC',
             'vis' => 'CLIENT_FACING',
             'trigger' => 'NONE',
+            'is_reversed' => 1,
             'msg' => 'This project carries a bonding requirement. United Five Construction will confirm surety capacity in writing before issuing a price, and the bond premium will be carried as a separate line item.',
             'evidence' => 'Lender requirement, owner requirement, or contract provision requiring a bond, stated in writing.',
             'condition' => null,
@@ -659,6 +660,7 @@ try {
             $q['owner'],
             $q['vis'],
             $q['trigger'],
+            $q['is_reversed'] ?? 0,
             $q['msg'],
             $q['evidence'],
             $q['condition'],

@@ -66,6 +66,7 @@ CREATE TABLE `questions` (
     `owner` ENUM('DESIGN', 'CLIENT', 'LENDER', 'UFC') NOT NULL,
     `visibility` ENUM('CLIENT_FACING', 'INTERNAL_ONLY') NOT NULL DEFAULT 'CLIENT_FACING',
     `trigger_type` ENUM('NONE', 'HOLD', 'STOP', 'ESCALATE') NOT NULL DEFAULT 'NONE',
+    `is_reversed` TINYINT(1) NOT NULL DEFAULT 0,
     `client_message` TEXT,
     `evidence_required` TEXT,
     `display_condition` TEXT, -- JSON or condition string
