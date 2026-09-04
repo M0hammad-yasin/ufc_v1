@@ -1,4 +1,5 @@
 <?php
+
 /**
  * United Five Construction - Phase Navigation & Gate Status Indicator
  */
@@ -26,7 +27,7 @@ $activePhaseNumber = $activePhaseNumber ?? $currentPhaseNum;
 
 <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md no-print">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <?php foreach ($phases as $p): 
+        <?php foreach ($phases as $p):
             $pNum = (int)$p['phase_number'];
             $pRes = $phaseResultsMap[$pNum] ?? null;
             $unlocked = isPhaseUnlocked((int)$assessment['id'], $pNum);
@@ -59,37 +60,37 @@ $activePhaseNumber = $activePhaseNumber ?? $currentPhaseNum;
                 $statusText = ($isCurrent) ? 'Active' : 'Unlocked';
             }
         ?>
-        <?php if ($unlocked): ?>
-            <a href="<?= $phaseUrl ?>" 
-               title="Go to Phase <?= $pNum ?> Questions (<?= htmlspecialchars($p['title']) ?>)"
-               class="group p-3 rounded-lg border cursor-pointer transition-all hover:border-[#c9a84c] hover:bg-[#122849] <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between no-underline">
-        <?php else: ?>
-            <div title="Phase <?= $pNum ?> is locked. Complete preceding phase gates to unlock."
-                 class="p-3 rounded-lg border cursor-not-allowed opacity-70 <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between">
-        <?php endif; ?>
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold tracking-wider uppercase">Phase <?= $pNum ?></span>
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full border border-current"><?= $icon ?> <?= $statusText ?></span>
-            </div>
-            <div class="mt-2 text-xs font-medium text-slate-200 line-clamp-1 <?= $unlocked ? 'group-hover:text-[#c9a84c] transition-colors' : '' ?>">
-                <?= htmlspecialchars($p['title']) ?>
-            </div>
-            <div class="text-[10px] text-slate-400 mt-1 italic line-clamp-1">
-                "<?= htmlspecialchars($p['the_question']) ?>"
-            </div>
-            <?php if (!empty($p['weight']) || !empty($p['threshold'])): 
-                $dispThresh = ((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold'];
-            ?>
-                <div class="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span class="text-slate-300">Weight: <strong class="text-[#c9a84c]"><?= number_format((float)$p['weight'] * 100, 1) ?>%</strong></span>
-                    <span>Pass &ge; <strong class="text-emerald-400"><?= number_format($dispThresh, 1) ?>%</strong></span>
-                </div>
-            <?php endif; ?>
-        <?php if ($unlocked): ?>
-            </a>
-        <?php else: ?>
-            </div>
-        <?php endif; ?>
-        <?php endforeach; ?>
+            <?php if ($unlocked): ?>
+                <a href="<?= $phaseUrl ?>"
+                    title="Go to Phase <?= $pNum ?> Questions (<?= htmlspecialchars($p['title']) ?>)"
+                    class="group p-3 rounded-lg border cursor-pointer transition-all hover:border-[#c9a84c] hover:bg-[#122849] <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between no-underline">
+                <?php else: ?>
+                    <div title="Phase <?= $pNum ?> is locked. Complete preceding phase gates to unlock."
+                        class="p-3 rounded-lg border cursor-not-allowed opacity-70 <?= $isCurrent ? 'ring-2 ring-[#c9a84c] bg-[#1a3a5c]/80' : 'bg-[#0a172c]/60' ?> <?= $badgeClass ?> flex flex-col justify-between">
+                    <?php endif; ?>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold tracking-wider uppercase">Phase <?= $pNum ?></span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full border border-current"><?= $icon ?> <?= $statusText ?></span>
+                    </div>
+                    <div class="mt-2 text-xs font-medium text-slate-200 line-clamp-1 <?= $unlocked ? 'group-hover:text-[#c9a84c] transition-colors' : '' ?>">
+                        <?= htmlspecialchars($p['title']) ?>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-1 italic line-clamp-1">
+                        "<?= htmlspecialchars($p['the_question']) ?>"
+                    </div>
+                    <?php if (!empty($p['weight']) || !empty($p['threshold'])):
+                        $dispThresh = ((float)$p['threshold'] <= 10.0 && (float)$p['threshold'] > 0) ? (float)$p['threshold'] * 10 : (float)$p['threshold'];
+                    ?>
+                        <div class="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                            <span class="text-slate-300">Score: <strong class="text-[#c9a84c]"><?= number_format((float)($pRes['score_percent'] ?? 0), 1) ?>%</strong></span>
+                            <span>Pass &ge; <strong class="text-emerald-400"><?= number_format($dispThresh, 1) ?>%</strong></span>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($unlocked): ?>
+                </a>
+            <?php else: ?>
     </div>
+<?php endif; ?>
+<?php endforeach; ?>
+</div>
 </div>

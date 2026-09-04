@@ -116,83 +116,76 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
 
                 <!-- Primary Tracker Action Area -->
                 <div class="flex flex-col items-end gap-1">
+                    <!-- ── Tracker Active: Show Action Status Dropdown ─────────── -->
+                    <div class="relative inline-block text-left" id="action-status-container">
+                        <button type="button"
+                            id="btn-action-status"
+                            onclick="toggleStatusDropdown(event)"
+                            class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-bolt text-xs"></i>
+                            <span>Action Status</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                        </button>
 
-                    <?php if ($trackerStopped): ?>
-                        <!-- ── Tracker Stopped: Show status and "Resume" button ─────────── -->
-                        <div class="flex items-center gap-2">
-                            <span class="px-2.5 py-1 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                                Tracker: <?= htmlspecialchars(str_replace('_', ' ', $tracker['status'] ?? 'Stopped')) ?>
-                            </span>
-                            <button type="button"
-                                id="btn-resume-tracker"
-                                onclick="resumeTracker(<?= $assessmentId ?>)"
-                                class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-bold rounded shadow border border-[#1e3e68] transition-all flex items-center gap-2 cursor-pointer">
-                                <i class="fa-solid fa-rotate-right text-xs text-[#c9a84c]"></i>
-                                <span>Resume (New 14 Days)</span>
-                            </button>
-                        </div>
+                        <!-- Dropdown Menu -->
+                        <div id="status-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 overflow-hidden py-1">
+                            <div class="px-3.5 py-2 border-b border-[#1e3e68] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Tracker Actions
+                            </div>
 
-                    <?php elseif ($trackerActive): ?>
-                        <!-- ── Tracker Active: Show Action Status Dropdown ─────────── -->
-                        <div class="relative inline-block text-left" id="action-status-container">
-                            <button type="button"
-                                id="btn-action-status"
-                                onclick="toggleStatusDropdown(event)"
-                                class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-2 cursor-pointer">
-                                <i class="fa-solid fa-bolt text-xs"></i>
-                                <span>Action Status</span>
-                                <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
-                            </button>
-
-                            <!-- Dropdown Menu -->
-                            <div id="status-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 overflow-hidden py-1">
-                                <div class="px-3.5 py-2 border-b border-[#1e3e68] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    Tracker Actions
-                                </div>
-
-                                <!-- 1. Assessment Completed — dynamic render ONLY if all 4 phases passed -->
-                                <?php if ($allPhasesPassed): ?>
-                                    <button type="button"
-                                        onclick="setTrackerStatus(<?= $assessmentId ?>, 'ASSESSMENT_COMPLETED')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                                        <div>
-                                            <div>Assessment Completed</div>
-                                            <div class="text-[10px] text-slate-400 font-normal">All 4 phases passed · stop timer</div>
-                                        </div>
-                                    </button>
-                                <?php endif; ?>
-
-                                <!-- 2. Discard (14 days passed) — show but lock if < 14 days with (i) tooltip -->
-                                <?php if ($trackerExpired): ?>
-                                    <button type="button"
-                                        onclick="setTrackerStatus(<?= $assessmentId ?>, 'DISCARDED')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-amber-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                        <i class="fa-solid fa-ban text-amber-400 text-sm"></i>
-                                        <div>
-                                            <div>Discard</div>
-                                            <div class="text-[10px] text-slate-400 font-normal">14 days elapsed since timer started</div>
-                                        </div>
-                                    </button>
-                                <?php else: ?>
-                                    <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
-                                        title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
-                                        <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
-                                        <div class="flex-1">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-slate-500">Discard</span>
-                                                <span class="px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700 flex items-center gap-1 cursor-help"
-                                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
-                                                    <i class="fa-solid fa-info-circle text-[9px] text-amber-400"></i>
-                                                    <span><?= $trackerLeft ?>d left</span>
-                                                </span>
-                                            </div>
-                                            <div class="text-[10px] text-slate-600 font-normal">Locked (14 days not elapsed)</div>
-                                        </div>
+                            <?php if ($trackerStopped): ?>
+                                <button type="button"
+                                    id="btn-resume-tracker"
+                                    onclick="resumeTracker(<?= $assessmentId ?>)"
+                                    class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-bold rounded shadow border border-[#1e3e68] transition-all flex items-center gap-2 cursor-pointer">
+                                    <i class="fa-solid fa-rotate-right text-xs text-[#c9a84c]"></i>
+                                    <span>Resume (New 14 Days)</span>
+                                </button>
+                            <?php endif; ?>
+                            <!-- 1. Assessment Completed — dynamic render ONLY if all 4 phases passed -->
+                            <?php if ($allPhasesPassed && $trackerActive): ?>
+                                <button type="button"
+                                    onclick="setTrackerStatus(<?= $assessmentId ?>, 'ASSESSMENT_COMPLETED')"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+                                    <div>
+                                        <div>Assessment Completed</div>
+                                        <div class="text-[10px] text-slate-400 font-normal">All 4 phases passed · stop timer</div>
                                     </div>
-                                <?php endif; ?>
+                                </button>
+                            <?php endif; ?>
 
-                                <!-- 3. Rejected / Not Fit (client ran away or client requirement insufficient) -->
+                            <!-- 2. Discard (14 days passed) — show but lock if < 14 days with (i) tooltip -->
+                            <?php if ($trackerExpired): ?>
+                                <button type="button"
+                                    onclick="setTrackerStatus(<?= $assessmentId ?>, 'DISCARDED')"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-amber-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-ban text-amber-400 text-sm"></i>
+                                    <div>
+                                        <div>Discard</div>
+                                        <div class="text-[10px] text-slate-400 font-normal">14 days elapsed since timer started</div>
+                                    </div>
+                                </button>
+                            <?php else: ?>
+                                <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
+                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                    <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500">Discard</span>
+                                            <span class="px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700 flex items-center gap-1 cursor-help"
+                                                title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                                <i class="fa-solid fa-info-circle text-[9px] text-amber-400"></i>
+                                                <span><?= $trackerLeft ?>d left</span>
+                                            </span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-600 font-normal">Locked (14 days not elapsed)</div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- 3. Rejected / Not Fit (client ran away or client requirement insufficient) -->
+                            <?php if ($trackerActive): ?>
                                 <button type="button"
                                     onclick="setTrackerStatus(<?= $assessmentId ?>, 'REJECTED')"
                                     class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-red-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
@@ -202,63 +195,73 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                                         <div class="text-[10px] text-slate-400 font-normal">Client ran away or insufficient reqs</div>
                                     </div>
                                 </button>
-
-                                <div class="border-t border-[#1e3e68] my-1"></div>
-
-                                <!-- 4. Send Requirements Letter — ONLY when a phase has status HOLD due to client insufficient data -->
-                                <?php if ($hasPhaseOnHold): ?>
-                                    <button type="button"
-                                        onclick="openEmailModal('send_letter')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-blue-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                        <i class="fa-solid fa-envelope-open-text text-blue-400 text-sm"></i>
-                                        <div>
-                                            <div>Send Requirements Letter</div>
-                                            <div class="text-[10px] text-slate-400 font-normal">Phase on HOLD · Request info</div>
+                            <?php else: ?>
+                                <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
+                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                    <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500">Rejected / Not Fit</span>
                                         </div>
-                                    </button>
-                                <?php endif; ?>
+                                        <div class="text-[10px] text-slate-600 font-normal">Locked (tracker is not started)</div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <div class="border-t border-[#1e3e68] my-1"></div>
 
-                                <!-- 5. Send Lead Summary -->
+                            <!-- 4. Send Requirements Letter — ONLY when a phase has status HOLD due to client insufficient data -->
+                            <?php if ($hasPhaseOnHold): ?>
                                 <button type="button"
-                                    onclick="openEmailModal('send_lead_summary')"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-sky-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-address-card text-sky-400 text-sm"></i>
+                                    onclick="openEmailModal('send_letter')"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-blue-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-envelope-open-text text-blue-400 text-sm"></i>
                                     <div>
-                                        <div>Send Lead &amp; Contact Data</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">Email lead summary sheet</div>
+                                        <div>Send Requirements Letter</div>
+                                        <div class="text-[10px] text-slate-400 font-normal">Phase on HOLD · Request info</div>
                                     </div>
                                 </button>
+                            <?php endif; ?>
 
-                                <div class="border-t border-[#1e3e68] my-1"></div>
+                            <!-- 5. Send Lead Summary -->
+                            <button type="button"
+                                onclick="openEmailModal('send_lead_summary')"
+                                class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-sky-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-address-card text-sky-400 text-sm"></i>
+                                <div>
+                                    <div>Send Lead &amp; Contact Data</div>
+                                    <div class="text-[10px] text-slate-400 font-normal">Email lead summary sheet</div>
+                                </div>
+                            </button>
 
-                                <!-- 6. Edit Assessment -->
-                                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
-                                    <i class="fa-solid fa-play text-[#c9a84c] text-xs"></i>
-                                    <span>Edit assessment</span>
-                                </a>
-                            </div>
+                            <div class="border-t border-[#1e3e68] my-1"></div>
+
+                            <!-- 6. Edit Assessment -->
+                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
+                                class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                                <i class="fa-solid fa-play text-[#c9a84c] text-xs"></i>
+                                <span>Edit assessment</span>
+                            </a>
                         </div>
-                    <?php endif; ?>
+                    </div>
 
                     <!-- Tracker Information Strip: tells if new timer is started or how many days have passed after first timer starts -->
-                    <?php if ($trackerExists): ?>
-                        <div id="tracker-info-strip" class="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-1">
-                            <i class="fa-regular fa-clock text-slate-500"></i>
-                            <?php if ($timerCycles > 1): ?>
-                                <span class="text-[#c9a84c] font-semibold">New Timer Active:</span>
-                                <span>Day <?= $trackerDays ?> of 14</span>
-                                <span class="text-slate-600">·</span>
-                                <span class="text-slate-400"><?= $daysSinceFirst ?>d since 1st timer</span>
-                            <?php else: ?>
-                                <span>Timer: Day <?= $trackerDays ?> of 14</span>
-                                <?php if ($trackerActive): ?>
-                                    <span class="text-slate-600">·</span>
-                                    <span class="<?= $trackerExpired ? 'text-red-400' : 'text-slate-400' ?>"><?= $trackerExpired ? 'Expired' : "{$trackerLeft}d left" ?></span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+                    <!-- <?php if ($trackerExists): ?> -->
+                    <!-- <div id="tracker-info-strip" class="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-1"> -->
+                    <!-- <i class="fa-regular fa-clock text-slate-500"></i> -->
+                    <!-- <?php if ($timerCycles > 1): ?> -->
+                    <!-- <span class="text-[#c9a84c] font-semibold">New Timer Active:</span> -->
+                    <!-- <span>Day <?= $trackerDays ?> of 14</span> -->
+                    <!-- <span class="text-slate-600">·</span> -->
+                    <!-- <span class="text-slate-400"><?= $daysSinceFirst ?>d since 1st timer</span> -->
+                    <!-- <?php else: ?> -->
+                    <!-- <span>Timer: Day <?= $trackerDays ?> of 14</span> -->
+                    <!-- <?php if ($trackerActive): ?> -->
+                    <!-- <span class="text-slate-600">·</span> -->
+                    <!-- <span class="<?= $trackerExpired ? 'text-red-400' : 'text-slate-400' ?>"><?= $trackerExpired ? 'Expired' : "{$trackerLeft}d left" ?></span> -->
+                    <!-- <?php endif; ?>/ -->
+                    <!-- <?php endif; ?> -->
+                    <!-- </div> -->
+                    <!-- <?php endif; ?> -->
 
                 </div>
             </div>
