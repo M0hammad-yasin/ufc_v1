@@ -43,24 +43,32 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
 
     // Verdict metadata
     $verdictText = match ($verdict) {
-        'GO'    => 'GO — PROCEED TO PROPOSAL',
-        'NO-GO' => 'NO-GO — HARD REJECT',
-        default => 'HOLD — ESCALATE TO CEO',
+        'GO'          => 'GO — PROCEED TO PROPOSAL',
+        'NO-GO'       => 'NO-GO — HARD REJECT',
+        'ESCALATED'   => 'HOLD — ESCALATED TO CEO',
+        'IN_PROGRESS' => 'IN PROGRESS',
+        default       => 'HOLD — REQUIREMENTS OUTSTANDING',
     };
     $verdictColor = match ($verdict) {
-        'GO'    => '#34d399',
-        'NO-GO' => '#f87171',
-        default => '#fbbf24',
+        'GO'          => '#34d399',
+        'NO-GO'       => '#f87171',
+        'ESCALATED'   => '#c084fc',
+        'IN_PROGRESS' => '#60a5fa',
+        default       => '#fbbf24',
     };
     $verdictBg = match ($verdict) {
-        'GO'    => '#064e3b',
-        'NO-GO' => '#450a0a',
-        default => '#451a03',
+        'GO'          => '#064e3b',
+        'NO-GO'       => '#450a0a',
+        'ESCALATED'   => '#3b0764',
+        'IN_PROGRESS' => '#172554',
+        default       => '#451a03',
     };
     $verdictBorder = match ($verdict) {
-        'GO'    => '#059669',
-        'NO-GO' => '#dc2626',
-        default => '#d97706',
+        'GO'          => '#059669',
+        'NO-GO'       => '#dc2626',
+        'ESCALATED'   => '#9333ea',
+        'IN_PROGRESS' => '#2563eb',
+        default       => '#d97706',
     };
 
     $riskText = match (true) {
@@ -121,6 +129,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     box-sizing: border-box;
                 }
 
+                <?php if (!$isWebPreview): ?>
                 body,
                 .pdf-document-root {
                     font-family: 'Helvetica', 'Arial', sans-serif;
@@ -131,6 +140,16 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     margin: 0;
                     padding: 0;
                 }
+                <?php else: ?>
+                .pdf-document-root {
+                    font-family: 'Helvetica', 'Arial', sans-serif;
+                    font-size: 8.5pt;
+                    line-height: 1.35;
+                    color: #1e293b;
+                    margin: 0;
+                    padding: 0;
+                }
+                <?php endif; ?>
 
                 <?php if ($isWebPreview): ?>.pdf-preview-sheet {
                     width: 850px;
@@ -145,10 +164,6 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                 }
 
                 @media print {
-                    body {
-                        background: #ffffff !important;
-                    }
-
                     .no-print {
                         display: none !important;
                     }
@@ -502,6 +517,16 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                 }
 
                 /* Flags Box */
+                .flag-group-header {
+                    font-size: 8pt;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5pt;
+                    padding-bottom: 3pt;
+                    margin-bottom: 6pt;
+                    border-bottom: 1pt solid #1e3e68;
+                }
+
                 .flag-item-box {
                     background-color: #06101e;
                     border: 1pt solid #1e3e68;
@@ -512,12 +537,49 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     font-size: 7.5pt;
                 }
 
+                .flag-item-box.red-flag {
+                    border-left-color: #ef4444;
+                }
+
+                .flag-item-box.amber-flag {
+                    border-left-color: #f59e0b;
+                }
+
                 .flag-item-box.resolvable {
                     border-left-color: #f59e0b;
                 }
 
                 .flag-item-box.internal {
                     border-left-color: #3b82f6;
+                }
+
+                .flag-badge {
+                    display: inline-block;
+                    font-size: 6.5pt;
+                    font-weight: bold;
+                    padding: 1pt 4pt;
+                    border-radius: 3pt;
+                    text-transform: uppercase;
+                    vertical-align: middle;
+                }
+
+                .flag-badge-qnum {
+                    background-color: #1a3a5c;
+                    color: #c9a84c;
+                    border: 0.5pt solid #234d7a;
+                    font-family: monospace;
+                }
+
+                .flag-badge-red {
+                    background-color: #450a0a;
+                    color: #f87171;
+                    border: 0.5pt solid #dc2626;
+                }
+
+                .flag-badge-amber {
+                    background-color: #451a03;
+                    color: #fbbf24;
+                    border: 0.5pt solid #d97706;
                 }
 
                 /* Itemized Table */
@@ -788,35 +850,89 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
             </div>
 
             <!-- ══ DOCUMENTED FLAGS & CONDITIONS ═════════════════════════════════════ -->
+            <?php
+            $redFlags   = array_values(array_filter($flags, fn($f) => ($f['statusLight'] ?? '') === 'RED'));
+            $amberFlags = array_values(array_filter($flags, fn($f) => ($f['statusLight'] ?? '') === 'AMBER'));
+            ?>
             <?php if (!empty($flags)): ?>
                 <div class="report-card">
                     <div class="section-header">
                         <div class="section-title">Documented Flags &amp; Conditions (<?= count($flags) ?>)</div>
                     </div>
-                    <?php foreach ($flags as $f):
-                        $boxClass = ($f['severity'] === RPT_CRITICAL) ? '' : (($f['severity'] === RPT_RESOLVABLE) ? 'resolvable' : 'internal');
-                    ?>
-                        <div class="flag-item-box <?= $boxClass ?>">
-                            <div style="color: #ffffff;">
-                                <strong style="color: #c9a84c;">[Q<?= htmlspecialchars($f['questionNumber']) ?>]</strong> <?= htmlspecialchars($f['questionText']) ?>
-                                &mdash; <span style="font-weight: bold; color: #fbbf24;"><?= htmlspecialchars($f['severity']) ?></span>
-                                <?php if (!empty($f['trigger']) && $f['trigger'] !== 'NONE'): ?>
-                                    <span style="color: #f87171;">(Trigger: <?= htmlspecialchars($f['trigger']) ?>)</span>
-                                <?php endif; ?>
-                            </div>
-                            <?php if (!empty($f['reason'])): ?>
-                                <div style="margin-top: 2pt; color: #cbd5e1;"><strong>Deficiency / Reason:</strong> <?= htmlspecialchars($f['reason']) ?></div>
-                            <?php endif; ?>
-                            <div style="margin-top: 2pt; color: #94a3b8; font-size: 7pt;">
-                                <?php if (!empty($f['responsibleParty'])): ?>
-                                    Responsible Party: <strong style="color: #e2e8f0;"><?= htmlspecialchars($f['responsibleParty']) ?></strong> &middot;
-                                <?php endif; ?>
-                                <?php if (!empty($f['targetCureDate'])): ?>
-                                    Target Cure Date: <strong style="color: #e2e8f0;"><?= DateService::format($f['targetCureDate'], 'M j, Y') ?></strong>
-                                <?php endif; ?>
-                            </div>
+
+                    <?php if (!empty($redFlags)): ?>
+                        <div class="flag-group-header" style="color: #f87171; margin-top: 4pt;">
+                            <span class="dot-indicator dot-red"></span>RED Flags (Critical Deficiencies) (<?= count($redFlags) ?>)
                         </div>
-                    <?php endforeach; ?>
+                        <?php foreach ($redFlags as $f): ?>
+                            <div class="flag-item-box red-flag">
+                                <div style="color: #ffffff;">
+                                    <span class="flag-badge flag-badge-qnum">Q<?= htmlspecialchars($f['questionNumber']) ?></span>
+                                    <strong><?= htmlspecialchars($f['questionText']) ?></strong>
+                                    <?php if (!empty($f['owner'])): ?>
+                                        <span style="color: #94a3b8; font-size: 7pt;">[<?= htmlspecialchars($f['owner']) ?>]</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($f['trigger']) && $f['trigger'] !== 'NONE'): ?>
+                                        <span class="flag-badge flag-badge-red"><?= htmlspecialchars($f['trigger']) ?></span>
+                                    <?php endif; ?>
+                                    <span class="flag-badge flag-badge-red">RED</span>
+                                </div>
+                                <?php if (!empty($f['reason'])): ?>
+                                    <div style="margin-top: 3pt; color: #cbd5e1;"><strong>Deficiency / Reason:</strong> <?= htmlspecialchars($f['reason']) ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($f['responsibleParty']) || !empty($f['targetCureDate'])): ?>
+                                    <div style="margin-top: 2pt; color: #94a3b8; font-size: 7pt;">
+                                        <?php if (!empty($f['responsibleParty'])): ?>
+                                            Responsible Party: <strong style="color: #e2e8f0;"><?= htmlspecialchars($f['responsibleParty']) ?></strong> &middot;
+                                        <?php endif; ?>
+                                        <?php if (!empty($f['targetCureDate'])): ?>
+                                            Target Cure Date: <strong style="color: #e2e8f0;"><?= DateService::format($f['targetCureDate'], 'M j, Y') ?></strong>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <?php if (!empty($amberFlags)): ?>
+                        <div class="flag-group-header" style="color: #fbbf24; margin-top: <?= !empty($redFlags) ? '8pt' : '4pt' ?>;">
+                            <span class="dot-indicator dot-amber"></span>AMBER Flags (Warnings &amp; Cautions) (<?= count($amberFlags) ?>)
+                        </div>
+                        <?php foreach ($amberFlags as $f): ?>
+                            <div class="flag-item-box amber-flag">
+                                <div style="color: #ffffff;">
+                                    <span class="flag-badge flag-badge-qnum">Q<?= htmlspecialchars($f['questionNumber']) ?></span>
+                                    <strong><?= htmlspecialchars($f['questionText']) ?></strong>
+                                    <?php if (!empty($f['owner'])): ?>
+                                        <span style="color: #94a3b8; font-size: 7pt;">[<?= htmlspecialchars($f['owner']) ?>]</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($f['trigger']) && $f['trigger'] !== 'NONE'): ?>
+                                        <span class="flag-badge flag-badge-amber"><?= htmlspecialchars($f['trigger']) ?></span>
+                                    <?php endif; ?>
+                                    <span class="flag-badge flag-badge-amber">AMBER</span>
+                                </div>
+                                <?php if (!empty($f['reason'])): ?>
+                                    <div style="margin-top: 3pt; color: #cbd5e1;"><strong>Deficiency / Reason:</strong> <?= htmlspecialchars($f['reason']) ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($f['responsibleParty']) || !empty($f['targetCureDate'])): ?>
+                                    <div style="margin-top: 2pt; color: #94a3b8; font-size: 7pt;">
+                                        <?php if (!empty($f['responsibleParty'])): ?>
+                                            Responsible Party: <strong style="color: #e2e8f0;"><?= htmlspecialchars($f['responsibleParty']) ?></strong> &middot;
+                                        <?php endif; ?>
+                                        <?php if (!empty($f['targetCureDate'])): ?>
+                                            Target Cure Date: <strong style="color: #e2e8f0;"><?= DateService::format($f['targetCureDate'], 'M j, Y') ?></strong>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="report-card">
+                    <div style="color: #34d399; font-weight: bold; font-size: 8pt; padding: 4pt 0;">
+                        &#10003; No flags or conditions documented — all items cleared.
+                    </div>
                 </div>
             <?php endif; ?>
 
