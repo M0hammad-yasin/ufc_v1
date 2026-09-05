@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/questions.php';
+require_once __DIR__ . '/../includes/SearchService.php';
 
 requireLogin();
 $currentUser = getCurrentUser();
@@ -26,7 +27,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resolve_task_id'])) {
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $filterStatus     = $_GET['status'] ?? 'OPEN';
+$searchQuery      = trim($_GET['search'] ?? '');
 $expandAssessment = isset($_GET['open']) ? (int)$_GET['open'] : null; // auto-open a specific assessment
+
+// Helper: build href preserving active status and search
+function taskStatusHref(string $status, string $sq): string
+{
+    $p = [];
+    if ($status !== '' && $status !== 'ALL') {
+        $p['status'] = $status;
+    } elseif ($status === 'ALL') {
+        $p['status'] = 'ALL';
+    }
+    if ($sq !== '') {
+        $p['search'] = $sq;
+    }
+    $qs = http_build_query($p);
+    return '/ufc_v1/admin/tasks.php' . ($qs !== '' ? '?' . $qs : '');
+}
 
 // ── Fetch all tasks with assessment meta ──────────────────────────────────────
 $sql = "
@@ -51,6 +69,20 @@ if (!empty($filterStatus) && $filterStatus !== 'ALL') {
     $sql    .= " AND t.status = ?";
     $params[] = $filterStatus;
 }
+
+$search = SearchService::buildClause($searchQuery, [
+    'a.client_name',
+    'a.project_name',
+    'a.assessment_number',
+    't.title',
+    't.responsible_party',
+    'q.question_number',
+    'q.question_text',
+    'eb.reason'
+]);
+$sql   .= $search['sql'];
+$params = array_merge($params, $search['params']);
+
 $sql .= " ORDER BY t.target_cure_date ASC, t.created_at DESC";
 
 $stmt  = $pdo->prepare($sql);
@@ -74,6 +106,189 @@ foreach ($allTasks as $task) {
         ];
     }
     $grouped[$aid]['tasks'][] = $task;
+}
+
+// ── Render tasks accordion HTML (used for both full page load and AJAX live search) ──
+function renderTasksAccordionHtml(array $grouped, ?int $expandAssessment = null, string $searchQuery = ''): string
+{
+    ob_start();
+    if (empty($grouped)): ?>
+        <?php if (!empty($searchQuery)): ?>
+        <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-14 text-center">
+            <i class="fa-solid fa-magnifying-glass text-3xl text-slate-500 mb-3"></i>
+            <p class="text-slate-300 font-semibold text-sm">No tasks found matching "<span class="text-slate-100 font-bold"><?= htmlspecialchars($searchQuery) ?></span>".</p>
+            <p class="text-slate-500 text-xs mt-1">Try refining your search terms or clearing the filter.</p>
+        </div>
+        <?php else: ?>
+        <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-14 text-center">
+            <i class="fa-solid fa-circle-check text-3xl text-emerald-500 mb-3"></i>
+            <p class="text-slate-300 font-semibold text-sm">No follow-up tasks for this filter.</p>
+            <p class="text-slate-500 text-xs mt-1">All deficiencies are either resolved or none have been logged yet.</p>
+        </div>
+        <?php endif; ?>
+    <?php else: ?>
+        <div class="space-y-3" id="tasks-accordion">
+            <?php foreach ($grouped as $assessmentId => $group):
+                $meta  = $group['meta'];
+                $tasks = $group['tasks'];
+
+                $openCount     = count(array_filter($tasks, fn($t) => $t['status'] === 'OPEN'));
+                $resolvedCount = count($tasks) - $openCount;
+                $isAutoOpen    = ($expandAssessment === $assessmentId) || (!empty($searchQuery) && count($grouped) <= 5);
+
+                // Assessment status badge
+                $asBadge = match($meta['assessment_status']) {
+                    'PROCEED_TO_PROPOSAL' => ['bg-emerald-950/80 text-emerald-300 border-emerald-600', 'Passed'],
+                    'HOLD'                => ['bg-amber-950/80 text-[#c9a84c] border-amber-600', 'HOLD'],
+                    'NOT_A_FIT'           => ['bg-red-950/80 text-red-300 border-red-600', 'Not A Fit'],
+                    'ESCALATED'           => ['bg-purple-950/80 text-purple-300 border-purple-600', 'Escalated'],
+                    default               => ['bg-blue-950/80 text-blue-300 border-blue-600', 'In Progress'],
+                };
+            ?>
+            <div class="assessment-card bg-[#0d1f3c] border border-[#1e3e68] rounded-xl shadow-lg overflow-hidden <?= $isAutoOpen ? 'open' : '' ?>"
+                 id="acard-<?= $assessmentId ?>">
+
+                <!-- ── Assessment Header (clickable) ── -->
+                <button type="button"
+                        onclick="toggleAssessment(<?= $assessmentId ?>)"
+                        class="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-[#1a3a5c]/30 transition-colors focus:outline-none cursor-pointer"
+                        id="atoggle-<?= $assessmentId ?>"
+                        aria-expanded="<?= $isAutoOpen ? 'true' : 'false' ?>">
+
+                    <!-- Chevron -->
+                    <span class="chevron-icon <?= $isAutoOpen ? 'rotated' : '' ?> text-slate-400 flex-shrink-0" id="achevron-<?= $assessmentId ?>">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
+
+                    <!-- Assessment Number + Client -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                            <span class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($meta['assessment_number']) ?></span>
+                            <span class="status-badge-assessment border <?= $asBadge[0] ?>"><?= $asBadge[1] ?></span>
+                        </div>
+                        <div class="font-bold text-sm text-white truncate"><?= htmlspecialchars($meta['client_name']) ?></div>
+                        <?php if (!empty($meta['project_name'])): ?>
+                        <div class="text-[11px] text-slate-400 truncate mt-0.5"><?= htmlspecialchars($meta['project_name']) ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Task Count Badges -->
+                    <div class="flex-shrink-0 flex items-center gap-2 ml-auto">
+                        <?php if ($openCount > 0): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold text-[11px]">
+                            <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
+                            <?= $openCount ?> Open
+                        </span>
+                        <?php endif; ?>
+                        <?php if ($resolvedCount > 0): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[11px]">
+                            <i class="fa-solid fa-circle-check text-[10px]"></i>
+                            <?= $resolvedCount ?> Done
+                        </span>
+                        <?php endif; ?>
+
+                        <!-- Link to assessment detail -->
+                        <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                           onclick="event.stopPropagation()"
+                           title="Open Assessment"
+                           class="w-7 h-7 rounded bg-[#1a3a5c] hover:bg-[#234d7a] border border-[#1e3e68] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </button>
+
+                <!-- ── Tasks Table (expandable) ── -->
+                <div class="task-rows-wrap <?= $isAutoOpen ? 'expanded' : '' ?>"
+                     id="atasks-<?= $assessmentId ?>">
+                    <div class="border-t border-[#1e3e68]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-[#0a172c]/80 text-slate-400 uppercase tracking-wider border-b border-[#1e3e68]">
+                                    <th class="py-2.5 px-5 font-semibold">Target Cure Date</th>
+                                    <th class="py-2.5 px-4 font-semibold">Responsible Party</th>
+                                    <th class="py-2.5 px-4 font-semibold">Deficiency / Item</th>
+                                    <th class="py-2.5 px-4 font-semibold">Status</th>
+                                    <th class="py-2.5 px-4 font-semibold text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#1e3e68]/60">
+                                <?php foreach ($tasks as $task):
+                                    $isOverdue = ($task['status'] === 'OPEN' && strtotime($task['target_cure_date']) < time());
+                                ?>
+                                <tr class="hover:bg-[#1a3a5c]/30 transition-colors <?= $isOverdue ? 'bg-red-950/10' : '' ?>">
+                                    <!-- Date -->
+                                    <td class="py-3 px-5 font-mono font-bold <?= $isOverdue ? 'text-red-400' : 'text-[#c9a84c]' ?> whitespace-nowrap">
+                                        <?= formatDate($task['target_cure_date']) ?>
+                                        <?php if ($isOverdue): ?>
+                                        <span class="block text-[10px] text-red-400 uppercase font-semibold">Overdue</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <!-- Responsible -->
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded bg-[#1a3a5c] border border-[#234d7a] text-[11px] font-bold text-slate-200 whitespace-nowrap">
+                                            <?= htmlspecialchars($task['responsible_party']) ?>
+                                        </span>
+                                    </td>
+                                    <!-- Question / Reason -->
+                                    <td class="py-3 px-4 max-w-xs">
+                                        <div class="font-bold text-slate-100">
+                                            <span class="text-[#c9a84c] mr-1 font-mono">Q<?= $task['question_number'] ?></span>
+                                            <?= htmlspecialchars(mb_substr($task['question_text'], 0, 72)) ?>…
+                                        </div>
+                                        <div class="text-slate-400 text-[11px] mt-0.5 italic line-clamp-1">
+                                            "<?= htmlspecialchars($task['reason']) ?>"
+                                        </div>
+                                    </td>
+                                    <!-- Status -->
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <?php if ($task['status'] === 'OPEN'): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold badge-amber">OPEN</span>
+                                        <?php else: ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold badge-green">RESOLVED</span>
+                                        <div class="text-[10px] text-slate-500 mt-0.5"><?= formatDate($task['resolved_at'], 'M j, Y') ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <!-- Action -->
+                                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                                        <?php if ($task['status'] === 'OPEN'): ?>
+                                        <form action="" method="POST" class="inline">
+                                            <?php
+                                            $qs = http_build_query(array_merge($_GET, ['open' => $assessmentId]));
+                                            ?>
+                                            <input type="hidden" name="resolve_task_id" value="<?= $task['id'] ?>">
+                                            <input type="hidden" name="_redirect_qs" value="<?= htmlspecialchars($qs) ?>">
+                                            <button type="submit"
+                                                    onclick="if(!confirm('Mark this task as resolved?')) return false;"
+                                                    class="px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-colors cursor-pointer">
+                                                Mark Resolved
+                                            </button>
+                                        </form>
+                                        <?php else: ?>
+                                        <span class="text-slate-500 text-[11px]">Closed <?= formatDate($task['resolved_at'], 'M j') ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><!-- /task-rows-wrap -->
+            </div><!-- /assessment-card -->
+            <?php endforeach; ?>
+        </div><!-- /tasks-accordion -->
+    <?php endif;
+    return (string)ob_get_clean();
+}
+
+// ── Handle AJAX Live Search Request ───────────────────────────────────────────
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => true,
+        'html'    => renderTasksAccordionHtml($grouped, $expandAssessment, $searchQuery),
+        'count'   => count($grouped),
+    ]);
+    exit;
 }
 
 // ── Summary counts ────────────────────────────────────────────────────────────
@@ -112,185 +327,54 @@ require_once __DIR__ . '/../components/header.php';
             <p class="text-xs text-slate-400 mt-1">Grouped by assessment — click a row to expand its tasks.</p>
         </div>
 
-        <!-- Summary pills -->
-        <div class="flex items-center gap-2 text-xs flex-wrap">
-            <a href="/ufc_v1/admin/tasks.php?status=OPEN"
-               class="px-3 py-1.5 rounded font-semibold <?= ($filterStatus === 'OPEN') ? 'bg-[#c9a84c] text-[#060f1e]' : 'bg-[#1a3a5c] text-slate-300 hover:bg-[#234d7a]' ?>">
-                Open&nbsp;<span class="opacity-75">(<?= $totals['OPEN'] ?>)</span>
-            </a>
-            <a href="/ufc_v1/admin/tasks.php?status=RESOLVED"
-               class="px-3 py-1.5 rounded font-semibold <?= ($filterStatus === 'RESOLVED') ? 'bg-emerald-700 text-white' : 'bg-[#1a3a5c] text-slate-300 hover:bg-[#234d7a]' ?>">
-                Resolved&nbsp;<span class="opacity-75">(<?= $totals['RESOLVED'] ?>)</span>
-            </a>
-            <a href="/ufc_v1/admin/tasks.php?status=ALL"
-               class="px-3 py-1.5 rounded font-semibold <?= ($filterStatus === 'ALL') ? 'bg-slate-600 text-white' : 'bg-[#1a3a5c] text-slate-300 hover:bg-[#234d7a]' ?>">
-                All&nbsp;<span class="opacity-75">(<?= $totals['ALL'] ?>)</span>
+        <div class="flex items-center gap-3">
+            <a href="/ufc_v1/admin/assessments.php"
+               class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-left text-xs"></i>
+                <span>Assessments</span>
             </a>
         </div>
     </div>
 
-    <?php if (empty($grouped)): ?>
-    <!-- ── Empty State ── -->
-    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-14 text-center">
-        <i class="fa-solid fa-circle-check text-3xl text-emerald-500 mb-3"></i>
-        <p class="text-slate-300 font-semibold text-sm">No follow-up tasks for this filter.</p>
-        <p class="text-slate-500 text-xs mt-1">All deficiencies are either resolved or none have been logged yet.</p>
+    <!-- ── Filter & Search Controls ── -->
+    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md">
+        <!-- Status Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <a href="<?= taskStatusHref('OPEN', $searchQuery) ?>"
+               class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($filterStatus === 'OPEN') ? 'bg-[#c9a84c] text-[#060f1e]' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                Open <span class="opacity-80">(<?= $totals['OPEN'] ?>)</span>
+            </a>
+            <a href="<?= taskStatusHref('RESOLVED', $searchQuery) ?>"
+               class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($filterStatus === 'RESOLVED') ? 'bg-emerald-700 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                Resolved <span class="opacity-80">(<?= $totals['RESOLVED'] ?>)</span>
+            </a>
+            <a href="<?= taskStatusHref('ALL', $searchQuery) ?>"
+               class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($filterStatus === 'ALL') ? 'bg-slate-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                All <span class="opacity-80">(<?= $totals['ALL'] ?>)</span>
+            </a>
+        </div>
+
+        <!-- Search Widget (Built Component) -->
+        <form action="" method="GET" id="tasks-search-form" class="w-full md:w-80 flex-shrink-0">
+            <input type="hidden" name="status" value="<?= htmlspecialchars($filterStatus) ?>">
+            <?= SearchService::renderInput([
+                'id'           => 'tasks-search-input',
+                'name'         => 'search',
+                'value'        => $searchQuery,
+                'placeholder'  => 'Search task, client, question, reason...',
+                'target_table' => '#tasks-container',
+                'form_id'      => 'tasks-search-form',
+                'debounce'     => 600,
+                'wrapper_class' => 'relative w-full',
+            ]) ?>
+        </form>
     </div>
-    <?php else: ?>
 
-    <!-- ── Assessment Cards ── -->
-    <div class="space-y-3" id="tasks-accordion">
-        <?php foreach ($grouped as $assessmentId => $group):
-            $meta  = $group['meta'];
-            $tasks = $group['tasks'];
+    <!-- ── Tasks Container (Live Search Target) ── -->
+    <div id="tasks-container">
+        <?= renderTasksAccordionHtml($grouped, $expandAssessment, $searchQuery) ?>
+    </div>
 
-            $openCount     = count(array_filter($tasks, fn($t) => $t['status'] === 'OPEN'));
-            $resolvedCount = count($tasks) - $openCount;
-            $isAutoOpen    = ($expandAssessment === $assessmentId);
-
-            // Assessment status badge
-            $asBadge = match($meta['assessment_status']) {
-                'PROCEED_TO_PROPOSAL' => ['bg-emerald-950/80 text-emerald-300 border-emerald-600', 'Passed'],
-                'HOLD'                => ['bg-amber-950/80 text-[#c9a84c] border-amber-600', 'HOLD'],
-                'NOT_A_FIT'           => ['bg-red-950/80 text-red-300 border-red-600', 'Not A Fit'],
-                'ESCALATED'           => ['bg-purple-950/80 text-purple-300 border-purple-600', 'Escalated'],
-                default               => ['bg-blue-950/80 text-blue-300 border-blue-600', 'In Progress'],
-            };
-        ?>
-        <div class="assessment-card bg-[#0d1f3c] border border-[#1e3e68] rounded-xl shadow-lg overflow-hidden <?= $isAutoOpen ? 'open' : '' ?>"
-             id="acard-<?= $assessmentId ?>">
-
-            <!-- ── Assessment Header (clickable) ── -->
-            <button type="button"
-                    onclick="toggleAssessment(<?= $assessmentId ?>)"
-                    class="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-[#1a3a5c]/30 transition-colors focus:outline-none"
-                    id="atoggle-<?= $assessmentId ?>"
-                    aria-expanded="<?= $isAutoOpen ? 'true' : 'false' ?>">
-
-                <!-- Chevron -->
-                <span class="chevron-icon <?= $isAutoOpen ? 'rotated' : '' ?> text-slate-400 flex-shrink-0" id="achevron-<?= $assessmentId ?>">
-                    <i class="fa-solid fa-chevron-down text-xs"></i>
-                </span>
-
-                <!-- Assessment Number + Client -->
-                <div class="flex-1 min-w-0">
-                    <div class="flex flex-wrap items-center gap-2 mb-0.5">
-                        <span class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($meta['assessment_number']) ?></span>
-                        <span class="status-badge-assessment border <?= $asBadge[0] ?>"><?= $asBadge[1] ?></span>
-                    </div>
-                    <div class="font-bold text-sm text-white truncate"><?= htmlspecialchars($meta['client_name']) ?></div>
-                    <?php if (!empty($meta['project_name'])): ?>
-                    <div class="text-[11px] text-slate-400 truncate mt-0.5"><?= htmlspecialchars($meta['project_name']) ?></div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Task Count Badges -->
-                <div class="flex-shrink-0 flex items-center gap-2 ml-auto">
-                    <?php if ($openCount > 0): ?>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold text-[11px]">
-                        <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
-                        <?= $openCount ?> Open
-                    </span>
-                    <?php endif; ?>
-                    <?php if ($resolvedCount > 0): ?>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[11px]">
-                        <i class="fa-solid fa-circle-check text-[10px]"></i>
-                        <?= $resolvedCount ?> Done
-                    </span>
-                    <?php endif; ?>
-
-                    <!-- Link to assessment detail -->
-                    <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
-                       onclick="event.stopPropagation()"
-                       title="Open Assessment"
-                       class="w-7 h-7 rounded bg-[#1a3a5c] hover:bg-[#234d7a] border border-[#1e3e68] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    </a>
-                </div>
-            </button>
-
-            <!-- ── Tasks Table (expandable) ── -->
-            <div class="task-rows-wrap <?= $isAutoOpen ? 'expanded' : '' ?>"
-                 id="atasks-<?= $assessmentId ?>">
-                <div class="border-t border-[#1e3e68]">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-[#0a172c]/80 text-slate-400 uppercase tracking-wider border-b border-[#1e3e68]">
-                                <th class="py-2.5 px-5 font-semibold">Target Cure Date</th>
-                                <th class="py-2.5 px-4 font-semibold">Responsible Party</th>
-                                <th class="py-2.5 px-4 font-semibold">Deficiency / Item</th>
-                                <th class="py-2.5 px-4 font-semibold">Status</th>
-                                <th class="py-2.5 px-4 font-semibold text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#1e3e68]/60">
-                            <?php foreach ($tasks as $task):
-                                $isOverdue = ($task['status'] === 'OPEN' && strtotime($task['target_cure_date']) < time());
-                            ?>
-                            <tr class="hover:bg-[#1a3a5c]/30 transition-colors <?= $isOverdue ? 'bg-red-950/10' : '' ?>">
-                                <!-- Date -->
-                                <td class="py-3 px-5 font-mono font-bold <?= $isOverdue ? 'text-red-400' : 'text-[#c9a84c]' ?> whitespace-nowrap">
-                                    <?= formatDate($task['target_cure_date']) ?>
-                                    <?php if ($isOverdue): ?>
-                                    <span class="block text-[10px] text-red-400 uppercase font-semibold">Overdue</span>
-                                    <?php endif; ?>
-                                </td>
-                                <!-- Responsible -->
-                                <td class="py-3 px-4">
-                                    <span class="px-2 py-0.5 rounded bg-[#1a3a5c] border border-[#234d7a] text-[11px] font-bold text-slate-200 whitespace-nowrap">
-                                        <?= htmlspecialchars($task['responsible_party']) ?>
-                                    </span>
-                                </td>
-                                <!-- Question / Reason -->
-                                <td class="py-3 px-4 max-w-xs">
-                                    <div class="font-bold text-slate-100">
-                                        <span class="text-[#c9a84c] mr-1 font-mono">Q<?= $task['question_number'] ?></span>
-                                        <?= htmlspecialchars(mb_substr($task['question_text'], 0, 72)) ?>…
-                                    </div>
-                                    <div class="text-slate-400 text-[11px] mt-0.5 italic line-clamp-1">
-                                        "<?= htmlspecialchars($task['reason']) ?>"
-                                    </div>
-                                </td>
-                                <!-- Status -->
-                                <td class="py-3 px-4 whitespace-nowrap">
-                                    <?php if ($task['status'] === 'OPEN'): ?>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold badge-amber">OPEN</span>
-                                    <?php else: ?>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold badge-green">RESOLVED</span>
-                                    <div class="text-[10px] text-slate-500 mt-0.5"><?= formatDate($task['resolved_at'], 'M j, Y') ?></div>
-                                    <?php endif; ?>
-                                </td>
-                                <!-- Action -->
-                                <td class="py-3 px-4 text-right whitespace-nowrap">
-                                    <?php if ($task['status'] === 'OPEN'): ?>
-                                    <form action="" method="POST" class="inline">
-                                        <?php
-                                        // Preserve current URL query params so we return to the same filter+open state
-                                        $qs = http_build_query(array_merge($_GET, ['open' => $assessmentId]));
-                                        ?>
-                                        <input type="hidden" name="resolve_task_id" value="<?= $task['id'] ?>">
-                                        <input type="hidden" name="_redirect_qs" value="<?= htmlspecialchars($qs) ?>">
-                                        <button type="submit"
-                                                onclick="if(!confirm('Mark this task as resolved?')) return false;"
-                                                class="px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-colors">
-                                            Mark Resolved
-                                        </button>
-                                    </form>
-                                    <?php else: ?>
-                                    <span class="text-slate-500 text-[11px]">Closed <?= formatDate($task['resolved_at'], 'M j') ?></span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div><!-- /task-rows-wrap -->
-        </div><!-- /assessment-card -->
-        <?php endforeach; ?>
-    </div><!-- /tasks-accordion -->
-
-    <?php endif; ?>
 </div>
 
 <script>
