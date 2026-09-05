@@ -59,6 +59,110 @@ $stmtHistory = $pdo->prepare("SELECT h.*, u.name as user_name FROM assessment_hi
 $stmtHistory->execute([$assessmentId]);
 $auditHistory = $stmtHistory->fetchAll();
 
+// Map raw JSON details to human-readable strings
+$mapAuditHistory = function (array $history): array {
+    return array_map(function ($hist) {
+        $action = $hist['action'] ?? '';
+        $raw    = $hist['details'] ?? '';
+        $data   = json_decode($raw, true);
+
+        if (!is_array($data)) {
+            $hist['details'] = $raw;
+            return $hist;
+        }
+
+        $formatted = '';
+        switch ($action) {
+            case 'ANSWER_SAVED':
+                $qNum    = $data['question_number'] ?? '';
+                $light   = $data['status_light']    ?? '';
+                $trigger = $data['trigger_fired']   ?? 'NONE';
+                $score   = isset($data['score'])    ? (float)$data['score'] : null;
+                $parts   = [];
+                if ($light !== '')                          { $parts[] = "Status: {$light}"; }
+                if ($trigger !== 'NONE' && $trigger !== '') { $parts[] = "Trigger: {$trigger}"; }
+                if ($score !== null)                        { $parts[] = "Score: {$score}"; }
+                $formatted = "Question {$qNum}" . (!empty($parts) ? ' — ' . implode(', ', $parts) : '');
+                break;
+
+            case 'MILESTONE_UPDATED':
+                $milestone = $data['milestone'] ?? 'Milestone';
+                $status    = !empty($data['completed']) ? 'Completed' : 'Pending';
+                $formatted = "Milestone \"{$milestone}\" marked as {$status}";
+                break;
+
+            case 'ASSESSMENT_STATUS_UPDATED':
+                $label     = $data['status_label'] ?? $data['new_status'] ?? '';
+                $formatted = 'Status updated to ' . str_replace('_', ' ', $label);
+                break;
+
+            case 'TRACKER_STARTED':
+            case 'TRACKER_AUTO_STARTED':
+                $formatted = '14-day SLA tracker started';
+                break;
+
+            case 'TRACKER_RESUMED':
+                $cycle     = $data['cycle'] ?? 1;
+                $formatted = "Tracker resumed for new 14-day cycle (#{$cycle})";
+                break;
+
+            case 'TRACKER_STATUS_SET':
+                $st        = $data['status'] ?? '';
+                $formatted = 'Tracker action status set to ' . str_replace('_', ' ', $st);
+                break;
+
+            case 'FILE_UPLOADED':
+                $file      = $data['original_name'] ?? $data['stored_filename'] ?? 'document';
+                $q         = !empty($data['question_number']) ? " for Question {$data['question_number']}" : '';
+                $formatted = "Uploaded evidence file \"{$file}\"{$q}";
+                break;
+
+            case 'EMAIL_SENT':
+                $type      = $data['email_type'] ?? $data['type'] ?? 'Notification';
+                $rec       = $data['recipient']  ?? '';
+                $formatted = 'Email sent: ' . str_replace('_', ' ', $type) . ($rec ? " to {$rec}" : '');
+                break;
+
+            case 'CEO_OVERRIDE_RECORDED':
+                $phase     = $data['phase_number'] ?? '';
+                $tr        = $data['trigger_type'] ?? '';
+                $formatted = 'Executive override recorded'
+                    . ($phase ? " for Phase {$phase}" : '')
+                    . ($tr   ? " ({$tr})"             : '');
+                break;
+
+            case 'AUTO_EXPIRED_UNRESPONSIVE':
+                $phase     = $data['phase'] ?? '';
+                $formatted = "Auto-expired: 30-day window passed for Phase {$phase} without response";
+                break;
+
+            case 'ASSESSMENT_CREATED':
+                $client    = $data['client_name'] ?? '';
+                $formatted = 'Assessment created' . ($client ? " for {$client}" : '');
+                break;
+
+            case 'ASSESSMENT_METADATA_UPDATED':
+                $formatted = 'Project details & metadata updated';
+                break;
+
+            default:
+                $items = [];
+                foreach ($data as $k => $v) {
+                    if (is_scalar($v)) {
+                        $keyLabel = ucwords(str_replace('_', ' ', (string)$k));
+                        $items[]  = "{$keyLabel}: {$v}";
+                    }
+                }
+                $formatted = !empty($items) ? implode(', ', $items) : $raw;
+                break;
+        }
+
+        $hist['details'] = $formatted;
+        return $hist;
+    }, $history);
+};
+
+$auditHistory = $mapAuditHistory($auditHistory);
 $sla = getAssessmentSlaStatus($assessment);
 
 $pageTitle = "Assessment #{$assessment['assessment_number']} — {$assessment['client_name']}";
@@ -448,15 +552,34 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                 <?php if (empty($auditHistory)): ?>
                     <div class="text-xs text-slate-400 italic">No history records yet.</div>
                 <?php else: ?>
-                    <?php foreach ($auditHistory as $hist): ?>
-                        <div class="p-3 rounded-lg bg-[#060f1e] border border-[#1e3e68] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <?php
+                    $actionColors = [
+                        'ANSWER_SAVED'              => 'text-sky-400',
+                        'ASSESSMENT_STATUS_UPDATED' => 'text-emerald-400',
+                        'MILESTONE_UPDATED'         => 'text-violet-400',
+                        'FILE_UPLOADED'             => 'text-teal-400',
+                        'EMAIL_SENT'                => 'text-blue-400',
+                        'CEO_OVERRIDE_RECORDED'     => 'text-red-400',
+                        'TRACKER_STARTED'           => 'text-amber-400',
+                        'TRACKER_AUTO_STARTED'      => 'text-amber-400',
+                        'TRACKER_RESUMED'           => 'text-amber-300',
+                        'TRACKER_STATUS_SET'        => 'text-amber-300',
+                        'ASSESSMENT_CREATED'        => 'text-green-400',
+                        'AUTO_EXPIRED_UNRESPONSIVE' => 'text-rose-400',
+                    ];
+                    foreach ($auditHistory as $hist):
+                        $actionRaw   = $hist['action'] ?? '';
+                        $actionLabel = ucwords(strtolower(str_replace('_', ' ', $actionRaw)));
+                        $colorClass  = $actionColors[$actionRaw] ?? 'text-[#c9a84c]';
+                    ?>
+                        <div class="p-3 rounded-lg bg-[#060f1e] border border-[#1e3e68] text-xs flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                             <div>
-                                <span class="font-bold text-[#c9a84c]"><?= htmlspecialchars($hist['action']) ?></span>
-                                <span class="text-slate-400 mx-1">&middot;</span>
-                                <span class="text-slate-300"><?= htmlspecialchars($hist['details']) ?></span>
+                                <span class="inline-block font-bold font-mono px-1.5 py-0.5 rounded bg-[#0d1f3c] border border-[#1e3e68] <?= $colorClass ?> mr-1.5"><?= htmlspecialchars($actionLabel) ?></span>
+                                <span class="text-slate-300 leading-relaxed"><?= htmlspecialchars($hist['details']) ?></span>
                             </div>
-                            <div class="text-slate-500 font-mono shrink-0">
-                                <?= formatDate($hist['created_at'], 'M j, H:i') ?> by <?= htmlspecialchars($hist['user_name'] ?? 'System') ?>
+                            <div class="text-slate-500 font-mono shrink-0 text-right">
+                                <?= formatDate($hist['created_at'], 'M j, H:i') ?><br>
+                                <span class="text-slate-600">by</span> <?= htmlspecialchars($hist['user_name'] ?? 'System') ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
