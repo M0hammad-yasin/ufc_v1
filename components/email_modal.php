@@ -152,7 +152,7 @@ async function handleEmailFormSubmit(e) {
     }
 
     try {
-        const res = await fetch('/ufc_v1/api/send_email.php', {
+        const res = await fetch('<?= BASE_URL ?>/api/send_email.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

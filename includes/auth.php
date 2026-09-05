@@ -17,7 +17,8 @@ function isLoggedIn(): bool {
     return isset($_SESSION['user']) && !empty($_SESSION['user']['id']);
 }
 
-function requireLogin(string $redirectUrl = '/ufc_v1/auth/login.php'): void {
+function requireLogin(?string $redirectUrl = null): void {
+    if ($redirectUrl === null) $redirectUrl = BASE_URL . '/auth/login.php';
     if (!isLoggedIn()) {
         header("Location: $redirectUrl");
         exit;
@@ -72,7 +73,8 @@ function canAccess(array|string $roles, ?array $user = null): bool {
 /**
  * Page Controller Guard: Redirects if user is not logged in or lacks required role.
  */
-function requireRole(array|string $allowedRoles, string $redirectUrl = '/ufc_v1/admin/assessments.php'): void {
+function requireRole(array|string $allowedRoles, ?string $redirectUrl = null): void {
+    if ($redirectUrl === null) $redirectUrl = BASE_URL . '/admin/assessments.php';
     requireLogin();
     if (!hasRole($allowedRoles)) {
         header("Location: $redirectUrl?error=unauthorized");

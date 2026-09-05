@@ -144,7 +144,7 @@ function renderEmailLogRows(array $logs, string $searchQuery = ''): string
             <!-- Assessment Link -->
             <td class="py-3.5 px-4 whitespace-nowrap">
                 <?php if (!empty($log['assessment_id'])): ?>
-                    <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$log['assessment_id'] ?>"
+                    <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= (int)$log['assessment_id'] ?>"
                        class="font-mono text-xs font-bold text-[#c9a84c] hover:underline flex items-center gap-1.5">
                         <span><?= htmlspecialchars($log['assessment_number'] ?? ('#' . $log['assessment_id'])) ?></span>
                         <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -209,7 +209,7 @@ require_once __DIR__ . '/../components/header.php';
 
         <?php if ($filterAssId > 0): ?>
             <div>
-                <a href="/ufc_v1/admin/email-logs.php" 
+                <a href="<?= BASE_URL ?>/admin/email-logs.php" 
                    class="px-3.5 py-1.5 rounded-lg bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold border border-[#1e3e68] transition-colors flex items-center gap-2">
                     <i class="fa-solid fa-xmark text-xs"></i>
                     <span>Clear Assessment Filter</span>
@@ -271,7 +271,7 @@ require_once __DIR__ . '/../components/header.php';
 
     <!-- ══ FILTER & SEARCH BAR ═══════════════════════════════════════════════ -->
     <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md space-y-3">
-        <form method="GET" action="/ufc_v1/admin/email-logs.php" id="email-logs-filter-form" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <form method="GET" action="<?= BASE_URL ?>/admin/email-logs.php" id="email-logs-filter-form" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <?php if ($filterAssId > 0): ?>
                 <input type="hidden" name="assessment_id" value="<?= $filterAssId ?>">
             <?php endif; ?>

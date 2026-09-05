@@ -5,8 +5,8 @@
 require_once __DIR__ . '/includes/auth.php';
 
 if (isLoggedIn()) {
-    header('Location: /ufc_v1/admin/assessments.php');
+    header('Location: ' . BASE_URL . '/admin/assessments.php');
 } else {
-    header('Location: /ufc_v1/auth/login.php');
+    header('Location: ' . BASE_URL . '/auth/login.php');
 }
 exit;

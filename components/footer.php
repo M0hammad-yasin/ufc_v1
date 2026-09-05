@@ -89,7 +89,7 @@
 </script>
 
 <!-- ══ CENTRALIZED LIVE SEARCH ENGINE ══════════════════ -->
-<script src="/ufc_v1/assets/js/live-search.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/live-search.js"></script>
 
 </body>
 </html>

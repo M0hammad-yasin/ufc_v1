@@ -29,7 +29,7 @@ require_once __DIR__ . '/../components/header.php';
     <!-- Top Action Toolbar -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 shadow-md">
         <div class="flex items-center gap-3">
-            <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+            <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                 class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Back to Assessment</span>
@@ -39,12 +39,12 @@ require_once __DIR__ . '/../components/header.php';
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <a href="/ufc_v1/assessment/report.php?id=<?= $assessmentId ?>"
+            <a href="<?= BASE_URL ?>/assessment/report.php?id=<?= $assessmentId ?>"
                 class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-2">
                 <i class="fa-regular fa-file-lines text-xs text-[#c9a84c]"></i>
                 <span>Report Body</span>
             </a>
-            <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
+            <a href="<?= BASE_URL ?>/api/export_pdf.php?id=<?= $assessmentId ?>"
                 class="px-5 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-xs rounded-md shadow-lg transition-all flex items-center gap-2">
                 <i class="fa-solid fa-file-pdf text-xs"></i>
                 <span>Download PDF</span>

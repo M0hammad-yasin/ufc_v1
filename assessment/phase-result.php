@@ -83,7 +83,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
 
             <div class="flex flex-wrap items-center gap-4">
                 <?php if ($phaseNumber < 4): ?>
-                    <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= ($phaseNumber + 1) . '.1' ?>"
+                    <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>&q=<?= ($phaseNumber + 1) . '.1' ?>"
                         class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                         <span>Unlock & Begin Phase <?= $phaseNumber + 1 ?></span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     </div>
                 <?php endif; ?>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                     class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Assessment Summary
                 </a>
@@ -142,7 +142,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
             </div>
 
             <div class="flex flex-wrap items-center gap-4">
-                <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $phaseNumber ?>"
+                <a href="<?= BASE_URL ?>/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $phaseNumber ?>"
                     target="_blank"
                     class="px-8 py-3 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +151,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     <span>View / Print Requirements Letter</span>
                 </a>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                     class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Return to Assessment Details
                 </a>
@@ -175,7 +175,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
             </p>
 
             <div class="flex flex-wrap items-center gap-4">
-                <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/assessment/decline-letter.php?id=<?= $assessmentId ?>"
                     target="_blank"
                     class="px-8 py-3 bg-red-800 hover:bg-red-700 text-white font-bold text-sm rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +184,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     <span>View / Print Official Decline Letter</span>
                 </a>
 
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                     class="px-5 py-3 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-medium rounded-md border border-[#1e3e68] transition-colors">
                     Return to Assessment Details
                 </a>
@@ -206,7 +206,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 Phase <?= $phaseNumber ?> cannot close until the Chief Executive Officer or legal counsel reviews and clears the escalation flag.
             </p>
 
-            <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+            <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                 class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-sm rounded shadow inline-block">
                 View Executive Override Panel
             </a>
@@ -258,7 +258,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                             </td>
                             <td class="py-3 px-3 text-slate-300"><?= $ans ? "{$ans['score']}/{$ans['points_possible']}" : '—' ?></td>
                             <td class="py-3 px-3 text-right">
-                                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $q['question_number'] ?>"
+                                <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $q['question_number'] ?>"
                                     class="text-xs text-[#c9a84c] hover:underline font-semibold">
                                     Edit
                                 </a>

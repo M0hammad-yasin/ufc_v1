@@ -150,5 +150,5 @@ try {
 }
 
 if (!$isCli) {
-    echo "</pre><p><a href='/ufc_v1/admin/assessments.php' style='color:#c9a84c;font-weight:bold;'>&larr; Return to Assessments Dashboard</a></p></body></html>";
+    echo "</pre><p><a href='<?= BASE_URL ?>/admin/assessments.php' style='color:#c9a84c;font-weight:bold;'>&larr; Return to Assessments Dashboard</a></p></body></html>";
 }

@@ -11,6 +11,18 @@ define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 define('DB_CHARSET', 'utf8mb4');
 
+
+if (!defined('BASE_URL')) {
+    $envBase = getenv('APP_BASE_URL');
+    if ($envBase !== false && $envBase !== '') {
+        define('BASE_URL', rtrim($envBase, '/'));
+    } else {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $isLocal = (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false);
+        define('BASE_URL', $isLocal ? '/ufc_v1' : '');
+    }
+}
+
 function getDbConnection(): PDO {
     static $pdo = null;
     if ($pdo === null) {

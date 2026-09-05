@@ -263,7 +263,7 @@ class EmailService
             </div>
 
             <p style="margin-top: 20px;">
-                <a href="http://localhost/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                <a href="http://localhost<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                     style="display: inline-block; background-color: #c9a84c; color: #060f1e; font-weight: bold; padding: 10px 20px; text-decoration: none; border-radius: 6px;">
                     Open Assessment Detail Inspector &rarr;
                 </a>

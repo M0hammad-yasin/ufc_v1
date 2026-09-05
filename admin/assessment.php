@@ -17,7 +17,7 @@ $assessment = getAssessmentDetails($assessmentId);
 
 if (!$assessment) {
     setFlashMessage('danger', 'Assessment not found.');
-    header("Location: /ufc_v1/admin/assessments.php");
+    header("Location: " . BASE_URL . "/admin/assessments.php");
     exit;
 }
 
@@ -79,9 +79,15 @@ $mapAuditHistory = function (array $history): array {
                 $trigger = $data['trigger_fired']   ?? 'NONE';
                 $score   = isset($data['score'])    ? (float)$data['score'] : null;
                 $parts   = [];
-                if ($light !== '')                          { $parts[] = "Status: {$light}"; }
-                if ($trigger !== 'NONE' && $trigger !== '') { $parts[] = "Trigger: {$trigger}"; }
-                if ($score !== null)                        { $parts[] = "Score: {$score}"; }
+                if ($light !== '') {
+                    $parts[] = "Status: {$light}";
+                }
+                if ($trigger !== 'NONE' && $trigger !== '') {
+                    $parts[] = "Trigger: {$trigger}";
+                }
+                if ($score !== null) {
+                    $parts[] = "Score: {$score}";
+                }
                 $formatted = "Question {$qNum}" . (!empty($parts) ? ' — ' . implode(', ', $parts) : '');
                 break;
 
@@ -205,32 +211,32 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                     <?= str_replace('_', ' ', $status) ?>
                 </span>
 
-                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>"
                     class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-1.5">
                     <i class="fa-regular fa-pen-to-square text-[#c9a84c]"></i>
                     <span>Edit Assessment</span>
                 </a>
 
-                <a href="/ufc_v1/assessment/preview-pdf.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/assessment/preview-pdf.php?id=<?= $assessmentId ?>"
                     target="_blank"
                     class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-1.5">
                     <i class="fa-regular fa-eye text-blue-400"></i>
                     <span>View PDF Report</span>
                 </a>
 
-                <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/api/export_pdf.php?id=<?= $assessmentId ?>"
                     class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-1.5">
                     <i class="fa-solid fa-file-pdf text-xs"></i>
                     <span>Download PDF</span>
                 </a>
                 <?php if ($status === 'HOLD'): ?>
-                    <a href="/ufc_v1/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $assessment['current_phase'] ?>"
+                    <a href="<?= BASE_URL ?>/assessment/requirements-letter.php?id=<?= $assessmentId ?>&phase=<?= $assessment['current_phase'] ?>"
                         target="_blank"
                         class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-amber-300 border border-amber-600/50 text-xs font-semibold rounded">
                         Requirements Letter
                     </a>
                 <?php elseif ($status === 'NOT_A_FIT'): ?>
-                    <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $assessmentId ?>"
+                    <a href="<?= BASE_URL ?>/assessment/decline-letter.php?id=<?= $assessmentId ?>"
                         target="_blank"
                         class="px-3.5 py-2 bg-red-950 hover:bg-red-900 text-red-300 border border-red-600/50 text-xs font-semibold rounded">
                         Decline Letter
@@ -380,7 +386,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                         <?php endif; ?>
 
                         <?php if ($unlocked): ?>
-                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $pNum . '.1' ?>"
+                            <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $pNum . '.1' ?>"
                                 class="px-3 py-1 bg-[#1a3a5c] hover:bg-[#234d7a] text-[#c9a84c] text-xs font-semibold rounded border border-[#1e3e68]">
                                 Review Phase
                             </a>
@@ -417,7 +423,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                                             <?php if (isset($evidenceFilesMap[$q['id']])):
                                                 $ef = $evidenceFilesMap[$q['id']];
                                             ?>
-                                                <a href="/ufc_v1/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>"
+                                                <a href="<?= BASE_URL ?>/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>"
                                                     target="_blank"
                                                     title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
                                                     class="ml-2 text-[#c9a84c] hover:text-white inline-flex items-center gap-1 text-[11px] font-normal underline">
@@ -452,14 +458,14 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                 <span class="text-xs text-slate-400 ml-1">&mdash; <?= htmlspecialchars($assessment['assessment_number']) ?></span>
             </div>
             <div class="flex items-center gap-2">
-                <a href="/ufc_v1/assessment/report.php?id=<?= $assessmentId ?>"
-                   target="_blank"
-                   class="px-3.5 py-1.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-1.5">
+                <a href="<?= BASE_URL ?>/assessment/report.php?id=<?= $assessmentId ?>"
+                    target="_blank"
+                    class="px-3.5 py-1.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-1.5">
                     <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                     <span>Open in Full Page</span>
                 </a>
-                <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
-                   class="px-3.5 py-1.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-colors flex items-center gap-1.5">
+                <a href="<?= BASE_URL ?>/api/export_pdf.php?id=<?= $assessmentId ?>"
+                    class="px-3.5 py-1.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-colors flex items-center gap-1.5">
                     <i class="fa-solid fa-file-pdf text-xs"></i>
                     <span>Download PDF</span>
                 </a>
@@ -489,7 +495,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                     The Chief Executive Officer may override a STOP trigger or clear an ESCALATION trigger. Written justification is recorded permanently in the audit log.
                 </p>
 
-                <form action="/ufc_v1/admin/ceo-override.php" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <form action="<?= BASE_URL ?>/admin/ceo-override.php" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="assessment_id" value="<?= $assessmentId ?>">
 
@@ -594,7 +600,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
         const tabs = ['check-report', 'phases', 'report', 'audit'];
         tabs.forEach(t => {
             const pane = document.getElementById(`tab-content-${t}`);
-            const btn  = document.getElementById(`tab-btn-${t}`);
+            const btn = document.getElementById(`tab-btn-${t}`);
             if (pane) {
                 pane.classList.toggle('hidden', t !== tabKey);
             }
@@ -614,9 +620,9 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
 
     // Support auto-open from query param ?tab=...
     (function() {
-        const params   = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');
-        const valid    = ['check-report', 'phases', 'report', 'audit'];
+        const valid = ['check-report', 'phases', 'report', 'audit'];
         if (tabParam && valid.includes(tabParam)) {
             switchViewTab(tabParam);
         }

@@ -12,7 +12,7 @@ requireLogin();
 $currentUser = getCurrentUser();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: /ufc_v1/admin/assessments.php");
+    header('Location: ' . BASE_URL . '/admin/assessments.php');
     exit;
 }
 
@@ -72,11 +72,11 @@ $nextQ = getNextApplicableQuestion($assessmentId, $phaseNumber, $questionNumber)
 
 if ($nextQ) {
     // Navigate to next applicable question
-    header("Location: /ufc_v1/assessment/question.php?id={$assessmentId}&q={$nextQ['question_number']}");
+    header('Location: ' . BASE_URL . '/assessment/question.php?id=' . $assessmentId . '&q=' . urlencode($nextQ['question_number']));
     exit;
 } else {
     // All applicable questions in this phase are complete -> Run Phase Gatekeeper
     $gateResult = evaluatePhaseGate($assessmentId, $phaseNumber, $currentUser['name']);
-    header("Location: /ufc_v1/assessment/phase-result.php?id={$assessmentId}&phase={$phaseNumber}");
+    header('Location: ' . BASE_URL . '/assessment/phase-result.php?id=' . $assessmentId . '&phase=' . $phaseNumber);
     exit;
 }

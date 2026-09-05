@@ -29,7 +29,7 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="/ufc_v1/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     <style>
         @media print {
             body {
@@ -53,7 +53,7 @@ $pageTitle = "Requirements Letter — {$assessment['client_name']} — Phase {$p
 
     <!-- Action Toolbar (No Print) -->
     <div class="max-w-4xl mx-auto mt-6 mb-6 flex items-center justify-between no-print">
-        <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-[#1a3a5c] px-3 py-1.5 rounded border border-[#1e3e68]">
+        <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-[#1a3a5c] px-3 py-1.5 rounded border border-[#1e3e68]">
             ← Return to Assessment
         </a>
         <div class="flex items-center gap-3">

@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resolve_task_id'])) {
     $stmtR->execute([$taskId]);
     setFlashMessage('success', 'Task marked as resolved.');
     $redirectQs = trim($_POST['_redirect_qs'] ?? '');
-    $redirectUrl = '/ufc_v1/admin/tasks.php' . ($redirectQs !== '' ? '?' . $redirectQs : '');
+    $redirectUrl = BASE_URL . '/admin/tasks.php' . ($redirectQs !== '' ? '?' . $redirectQs : '');
     header("Location: $redirectUrl");
     exit;
 }
@@ -43,7 +43,7 @@ function taskStatusHref(string $status, string $sq): string
         $p['search'] = $sq;
     }
     $qs = http_build_query($p);
-    return '/ufc_v1/admin/tasks.php' . ($qs !== '' ? '?' . $qs : '');
+    return BASE_URL . '/admin/tasks.php' . ($qs !== '' ? '?' . $qs : '');
 }
 
 // ── Fetch all tasks with assessment meta ──────────────────────────────────────
@@ -188,7 +188,7 @@ function renderTasksAccordionHtml(array $grouped, ?int $expandAssessment = null,
                         <?php endif; ?>
 
                         <!-- Link to assessment detail -->
-                        <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                        <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                            onclick="event.stopPropagation()"
                            title="Open Assessment"
                            class="w-7 h-7 rounded bg-[#1a3a5c] hover:bg-[#234d7a] border border-[#1e3e68] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
@@ -328,7 +328,7 @@ require_once __DIR__ . '/../components/header.php';
         </div>
 
         <div class="flex items-center gap-3">
-            <a href="/ufc_v1/admin/assessments.php"
+            <a href="<?= BASE_URL ?>/admin/assessments.php"
                class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-1.5">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Assessments</span>

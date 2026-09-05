@@ -235,7 +235,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                                 <div class="border-t border-[#1e3e68] my-1"></div>
 
                                 <!-- 6. Edit Assessment -->
-                                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
+                                <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>"
                                     class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                     <i class="fa-solid fa-play text-[#c9a84c] text-xs"></i>
                                     <span>Edit assessment</span>
@@ -454,7 +454,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                 }
 
                 try {
-                    const response = await fetch('/ufc_v1/api/update_milestones.php', {
+                    const response = await fetch('<?= BASE_URL ?>/api/update_milestones.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -521,7 +521,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
         if (menu) menu.classList.add('hidden');
 
         try {
-            const response = await fetch('/ufc_v1/api/update_status.php', {
+            const response = await fetch('<?= BASE_URL ?>/api/update_status.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -562,7 +562,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
 
     window.startTracker = async function(assessmentId) {
         try {
-            const response = await fetch('/ufc_v1/api/update_tracker.php', {
+            const response = await fetch('<?= BASE_URL ?>/api/update_tracker.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -587,7 +587,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
 
     window.resumeTracker = async function(assessmentId) {
         try {
-            const response = await fetch('/ufc_v1/api/update_tracker.php', {
+            const response = await fetch('<?= BASE_URL ?>/api/update_tracker.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -615,7 +615,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
         if (menu) menu.classList.add('hidden');
 
         try {
-            const response = await fetch('/ufc_v1/api/update_tracker.php', {
+            const response = await fetch('<?= BASE_URL ?>/api/update_tracker.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

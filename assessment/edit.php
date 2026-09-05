@@ -15,7 +15,7 @@ $assessment = getAssessmentDetails($assessmentId);
 
 if (!$assessment) {
     setFlashMessage('danger', 'Assessment not found.');
-    header("Location: /ufc_v1/admin/assessments.php");
+    header('Location: ' . BASE_URL . '/admin/assessments.php');
     exit;
 }
 
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             setFlashMessage('success', 'Assessment details updated successfully.');
-            header("Location: /ufc_v1/admin/assessment.php?id=" . $assessmentId);
+            header('Location: ' . BASE_URL . '/admin/assessment.php?id=' . $assessmentId);
             exit;
         }
     }
@@ -92,7 +92,7 @@ require_once __DIR__ . '/../components/header.php';
 
     <!-- Top Breadcrumb Bar -->
     <div class="flex items-center justify-between">
-        <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
+        <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>" 
            class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-all flex items-center gap-2">
             <i class="fa-solid fa-arrow-left"></i>
             <span>Back to Assessment</span>
@@ -196,7 +196,7 @@ require_once __DIR__ . '/../components/header.php';
 
             <!-- Submit Button -->
             <div class="pt-4 border-t border-[#1e3e68] flex items-center justify-end gap-3">
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>" 
+                <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>" 
                    class="px-5 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-300 text-sm font-semibold rounded-lg border border-[#1e3e68] transition-all">
                     Cancel
                 </a>

@@ -73,7 +73,7 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                 <?php if (!empty($searchQuery)): ?>
                     No assessments found matching "<span class="text-slate-200 font-semibold"><?= htmlspecialchars($searchQuery) ?></span>".
                 <?php else: ?>
-                    No assessment records found. Click <a href="/ufc_v1/assessment/start.php" class="text-[#c9a84c] underline font-semibold">Intake New Lead</a> to start.
+                    No assessment records found. Click <a href="<?= BASE_URL ?>/assessment/start.php" class="text-[#c9a84c] underline font-semibold">Intake New Lead</a> to start.
                 <?php endif; ?>
             </td>
         </tr>
@@ -103,7 +103,7 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                 <!-- 1. Ref / Client Name -->
                 <td class="py-3.5 px-4">
                     <div class="font-mono text-[11px] text-slate-400"><?= htmlspecialchars($ass['assessment_number']) ?></div>
-                    <a href="/ufc_v1/admin/assessment.php?id=<?= $ass['id'] ?>" class="font-bold text-sm text-slate-100 hover:text-[#c9a84c] transition-colors">
+                    <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $ass['id'] ?>" class="font-bold text-sm text-slate-100 hover:text-[#c9a84c] transition-colors">
                         <?= htmlspecialchars($ass['client_name']) ?>
                     </a>
                 </td>
@@ -167,21 +167,21 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                             </div>
 
                             <!-- Edit Assessment / Questions -->
-                            <a href="/ufc_v1/assessment/question.php?id=<?= (int)$ass['id'] ?>"
+                            <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= (int)$ass['id'] ?>"
                                 class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-regular fa-pen-to-square text-blue-400 text-sm"></i>
                                 <span>Edit Assessment</span>
                             </a>
 
                             <!-- Full Details Inspector -->
-                            <a href="/ufc_v1/admin/assessment.php?id=<?= (int)$ass['id'] ?>"
+                            <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= (int)$ass['id'] ?>"
                                 class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-solid fa-circle-info text-sky-400 text-sm"></i>
                                 <span>Full Details</span>
                             </a>
 
                             <!-- Preview PDF -->
-                            <a href="/ufc_v1/assessment/preview-pdf.php?id=<?= (int)$ass['id'] ?>"
+                            <a href="<?= BASE_URL ?>/assessment/preview-pdf.php?id=<?= (int)$ass['id'] ?>"
                                 target="_blank"
                                 class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-regular fa-file-pdf text-amber-400 text-sm"></i>
@@ -189,7 +189,7 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                             </a>
 
                             <!-- Download PDF -->
-                            <a href="/ufc_v1/api/export_pdf.php?id=<?= (int)$ass['id'] ?>"
+                            <a href="<?= BASE_URL ?>/api/export_pdf.php?id=<?= (int)$ass['id'] ?>"
                                 class="px-3.5 py-2.5 text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
                                 <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
                                 <span>Download PDF</span>
@@ -251,7 +251,7 @@ require_once __DIR__ . '/../components/header.php';
             <p class="text-xs text-slate-400 mt-1">Four-phase qualification gates for private client leads.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="/ufc_v1/assessment/start.php"
+            <a href="<?= BASE_URL ?>/assessment/start.php"
                 class="px-5 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-xs rounded shadow transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -278,7 +278,7 @@ require_once __DIR__ . '/../components/header.php';
                 if ($dt     !== '')  $p['date_to']   = $dt;
                 if ($sq     !== '')  $p['search']    = $sq;
                 $qs = http_build_query($p);
-                return '/ufc_v1/admin/assessments.php' . ($qs !== '' ? '?' . $qs : '');
+                return BASE_URL . '/admin/assessments.php' . ($qs !== '' ? '?' . $qs : '');
             }
             ?>
             <div class="flex flex-wrap items-center gap-1 text-xs">
@@ -432,7 +432,7 @@ require_once __DIR__ . '/../components/header.php';
         if (!confirmed) return;
 
         try {
-            const response = await fetch('/ufc_v1/api/delete_assessment.php', {
+            const response = await fetch('<?= BASE_URL ?>/api/delete_assessment.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

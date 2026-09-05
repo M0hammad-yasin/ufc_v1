@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             setFlashMessage('success', "New lead created for {$clientName} — {$projectName}. Beginning Phase 1.");
-            header("Location: /ufc_v1/assessment/question.php?id={$newId}&q=1.1");
+            header('Location: ' . BASE_URL . '/assessment/question.php?id=' . $newId . '&q=1.1');
             exit;
         }
     }
@@ -381,7 +381,7 @@ require_once __DIR__ . '/../components/header.php';
             disableBtn();
 
             debounceTimer = setTimeout(function() {
-                fetch('/ufc_v1/api/check_project_name.php', {
+                fetch('<?= BASE_URL ?>/api/check_project_name.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

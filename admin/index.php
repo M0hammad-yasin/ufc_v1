@@ -1,3 +1,3 @@
 <?php
-header('Location: /ufc_v1/admin/assessments.php');
+header('Location: ' . BASE_URL . '/admin/assessments.php');
 exit;

@@ -10,7 +10,7 @@ requireRole(['ceo', 'admin']);
 $currentUser = getCurrentUser();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /ufc_v1/admin/assessments.php');
+    header('Location: ' . BASE_URL . '/admin/assessments.php');
     exit;
 }
 
@@ -26,7 +26,7 @@ $justification = trim($_POST['justification'] ?? '');
 
 if (empty($justification) || $assessmentId <= 0 || $phaseId <= 0) {
     setFlashMessage('danger', 'Justification is required for executive override.');
-    header("Location: /ufc_v1/admin/assessment.php?id={$assessmentId}");
+    header('Location: ' . BASE_URL . '/admin/assessment.php?id=' . $assessmentId);
     exit;
 }
 
@@ -62,5 +62,5 @@ logAudit($assessmentId, 'CEO_OVERRIDE_RECORDED', [
 ], (int)$currentUser['id']);
 
 setFlashMessage('success', "Executive override recorded permanently for Phase {$phaseNum}. Phase gate re-evaluated.");
-header("Location: /ufc_v1/admin/assessment.php?id={$assessmentId}");
+header('Location: ' . BASE_URL . '/admin/assessment.php?id=' . $assessmentId);
 exit;

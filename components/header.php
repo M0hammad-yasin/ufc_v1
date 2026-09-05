@@ -21,7 +21,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/ufc_v1/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     <style>
         :root {
             --navy: #0d1f3c;
@@ -71,27 +71,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 $isNewActive = ($current_page === 'start.php' || $current_page === 'question.php');
                 $isListActive = ($current_page === 'assessments.php' || $current_page === 'assessment.php' || $current_page === 'phase-result.php');
                 ?>
-                <a href="/ufc_v1/admin/metrics.php"
+                <a href="<?= BASE_URL ?>/admin/metrics.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'metrics.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-chart-pie w-6 mr-3 text-[#c9a84c]"></i> Dashboard
                 </a>
-                <a href="/ufc_v1/assessment/start.php"
+                <a href="<?= BASE_URL ?>/assessment/start.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $isNewActive ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-chart-line w-6 mr-3 text-[#c9a84c]"></i> New Assessment
                 </a>
-                <a href="/ufc_v1/admin/assessments.php"
+                <a href="<?= BASE_URL ?>/admin/assessments.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $isListActive ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list w-6 mr-3 text-[#c9a84c]"></i> Assessment List
                 </a>
-                <a href="/ufc_v1/admin/tasks.php"
+                <a href="<?= BASE_URL ?>/admin/tasks.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'tasks.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list-check w-6 mr-3 text-[#c9a84c]"></i> Follow-Up Tasks
                 </a>
-                <!-- <a href="/ufc_v1/admin/decline-log.php"
+                <!-- <a href="<?= BASE_URL ?>/admin/decline-log.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'decline-log.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-ban w-6 mr-3 text-[#c9a84c]"></i> Decline Log
                 </a> -->
-                <a href="/ufc_v1/admin/email-logs.php"
+                <a href="<?= BASE_URL ?>/admin/email-logs.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'email-logs.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-envelope-open-text w-6 mr-3 text-[#c9a84c]"></i> Email Logs
                 </a>
@@ -106,7 +106,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <p class="text-[10px] uppercase font-bold text-[#c9a84c] tracking-wider mb-4">
                     <?= strtoupper($currentUser['role'] ?? 'ASSESSOR') ?>
                 </p>
-                <a href="/ufc_v1/auth/logout.php"
+                <a href="<?= BASE_URL ?>/auth/logout.php"
                     class="flex items-center px-4 py-2.5 text-xs font-semibold text-[#f87171] hover:text-white hover:bg-red-900/20 border border-[#f87171]/20 hover:border-[#f87171] rounded-md transition-colors">
                     <i class="fa-solid fa-right-from-bracket mr-2"></i> Sign Out
                 </a>
@@ -128,27 +128,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
             <!-- Nav links -->
             <nav class="flex flex-col p-3 space-y-1 flex-1">
-                <a href="/ufc_v1/admin/metrics.php"
+                <a href="<?= BASE_URL ?>/admin/metrics.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'metrics.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-chart-pie w-6 mr-3 text-[#c9a84c]"></i> Dashboard
                 </a>
-                <a href="/ufc_v1/assessment/start.php"
+                <a href="<?= BASE_URL ?>/assessment/start.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $isNewActive ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-chart-line w-6 mr-3 text-[#c9a84c]"></i> New Assessment
                 </a>
-                <a href="/ufc_v1/admin/assessments.php"
+                <a href="<?= BASE_URL ?>/admin/assessments.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $isListActive ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list w-6 mr-3 text-[#c9a84c]"></i> Assessment List
                 </a>
-                <a href="/ufc_v1/admin/tasks.php"
+                <a href="<?= BASE_URL ?>/admin/tasks.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'tasks.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list-check w-6 mr-3 text-[#c9a84c]"></i> Follow-Up Tasks
                 </a>
-                <!-- <a href="/ufc_v1/admin/decline-log.php"
+                <!-- <a href="<?= BASE_URL ?>/admin/decline-log.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'decline-log.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-ban w-6 mr-3 text-[#c9a84c]"></i> Decline Log
                 </a> -->
-                <a href="/ufc_v1/admin/email-logs.php"
+                <a href="<?= BASE_URL ?>/admin/email-logs.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'email-logs.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-envelope-open-text w-6 mr-3 text-[#c9a84c]"></i> Email Logs
                 </a>
@@ -163,7 +163,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <p class="text-[10px] uppercase font-bold text-[#c9a84c] tracking-wider mb-4">
                     <?= strtoupper($currentUser['role'] ?? 'ASSESSOR') ?>
                 </p>
-                <a href="/ufc_v1/auth/logout.php"
+                <a href="<?= BASE_URL ?>/auth/logout.php"
                     class="flex items-center justify-center px-4 py-2.5 text-xs font-semibold text-[#f87171] hover:text-white hover:bg-red-900/20 border border-[#f87171]/20 hover:border-[#f87171] rounded-md transition-colors">
                     <i class="fa-solid fa-right-from-bracket mr-2"></i> Sign Out
                 </a>
@@ -183,7 +183,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                     <span class="font-serif font-bold text-base tracking-wider text-slate-100">UNITED FIVE CONSTRUCTION</span>
                 </div>
-                <a href="/ufc_v1/auth/login.php" class="px-4 py-1.5 text-xs font-semibold text-[#060f1e] bg-[#c9a84c] hover:bg-[#d6b85e] rounded shadow transition-all">
+                <a href="<?= BASE_URL ?>/auth/login.php" class="px-4 py-1.5 text-xs font-semibold text-[#060f1e] bg-[#c9a84c] hover:bg-[#d6b85e] rounded shadow transition-all">
                     Sign In
                 </a>
             </header>

@@ -9,7 +9,7 @@ require_once __DIR__ . '/../includes/functions.php';
 
 requireLogin();
 //remove this line in future if this page is needed
-header('Location: /ufc_v1/admin/metrics.php');
+header('Location: ' . BASE_URL . '/admin/metrics.php');
 exit;
 
 $pdo = getDbConnection();
@@ -93,7 +93,7 @@ require_once __DIR__ . '/../components/header.php';
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
-                                    <a href="/ufc_v1/assessment/decline-letter.php?id=<?= $d['id'] ?>" target="_blank"
+                                    <a href="<?= BASE_URL ?>/assessment/decline-letter.php?id=<?= $d['id'] ?>" target="_blank"
                                         class="text-xs text-red-400 hover:text-red-300 font-semibold underline">
                                         Decline Letter
                                     </a>

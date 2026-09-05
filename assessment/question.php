@@ -39,7 +39,7 @@ $activePhaseNumber = (int)$question['phase_number'];
 // Security & Phase Locking Backend Verification
 if (!isPhaseUnlocked($assessmentId, $activePhaseNumber)) {
     setFlashMessage('danger', "Phase {$activePhaseNumber} is locked. Previous phase must PASS first.");
-    header("Location: /ufc_v1/admin/assessment.php?id={$assessmentId}");
+    header('Location: ' . BASE_URL . '/admin/assessment.php?id=' . $assessmentId);
     exit;
 }
 
@@ -141,7 +141,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
         <?php endif; ?>
 
         <!-- Question Form -->
-        <form id="questionForm" action="/ufc_v1/assessment/save-answer.php" method="POST" enctype="multipart/form-data" class="space-y-8">
+        <form id="questionForm" action="<?= BASE_URL ?>/assessment/save-answer.php" method="POST" enctype="multipart/form-data" class="space-y-8">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="assessment_id" value="<?= $assessmentId ?>">
             <input type="hidden" name="question_id" value="<?= $question['id'] ?>">
@@ -356,7 +356,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                         <div class="mt-2 text-xs text-emerald-400 flex items-center gap-2">
                             <i class="fa-solid fa-paperclip"></i>
                             <span>Attached: <strong><?= htmlspecialchars($evidenceFiles[0]['original_name']) ?></strong> (<?= round($evidenceFiles[0]['file_size'] / 1024) ?> KB)</span>
-                            <a href="/ufc_v1/uploads/<?= htmlspecialchars($evidenceFiles[0]['stored_filename']) ?>" target="_blank" class="underline text-[#c9a84c] hover:text-white ml-2 inline-flex items-center gap-1 font-semibold">
+                            <a href="<?= BASE_URL ?>/uploads/<?= htmlspecialchars($evidenceFiles[0]['stored_filename']) ?>" target="_blank" class="underline text-[#c9a84c] hover:text-white ml-2 inline-flex items-center gap-1 font-semibold">
                                 <span>View Document</span>
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                             </a>
@@ -376,7 +376,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
             <!-- Navigation Buttons -->
             <div class="pt-6 border-t border-[#1e3e68] flex items-center justify-between">
                 <?php if ($prevQuestion): ?>
-                    <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $prevQuestion['question_number'] ?>"
+                    <a href="<?= BASE_URL ?>/assessment/question.php?id=<?= $assessmentId ?>&q=<?= $prevQuestion['question_number'] ?>"
                         class="px-5 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -384,7 +384,7 @@ require_once __DIR__ . '/../components/phase-nav.php';
                         <span>Previous</span>
                     </a>
                 <?php else: ?>
-                    <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                    <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                         class="px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
                         Exit Assessment
                     </a>

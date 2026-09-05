@@ -544,7 +544,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
         <!-- ⑤ ACTION BUTTONS ────────────────────────────────────────────── -->
         <?php if ($showActions): ?>
             <div class="flex flex-wrap items-center gap-3 pt-2">
-                <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
                     class="px-6 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -552,7 +552,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                     </svg>
                     Assessment Details
                 </a>
-                <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/api/export_pdf.php?id=<?= $assessmentId ?>"
                     class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-sm font-bold rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -560,7 +560,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                     </svg>
                     Export as PDF
                 </a>
-                <a href="/ufc_v1/assessment/report.php?id=<?= $assessmentId ?>"
+                <a href="<?= BASE_URL ?>/assessment/report.php?id=<?= $assessmentId ?>"
                     target="_blank"
                     class="px-5 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

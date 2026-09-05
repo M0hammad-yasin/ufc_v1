@@ -32,7 +32,7 @@ $activePhaseNumber = $activePhaseNumber ?? $currentPhaseNum;
             $pRes = $phaseResultsMap[$pNum] ?? null;
             $unlocked = isPhaseUnlocked((int)$assessment['id'], $pNum);
             $isCurrent = ($pNum === $activePhaseNumber);
-            $phaseUrl = "/ufc_v1/assessment/question.php?id=" . (int)$assessment['id'] . "&q=" . $pNum . ".1";
+            $phaseUrl = BASE_URL . "/assessment/question.php?id=" . (int)$assessment['id'] . "&q=" . $pNum . ".1";
 
             $badgeClass = 'bg-slate-800/80 text-slate-400 border-slate-700';
             $icon = '🔒';

@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if (isLoggedIn()) {
-    header('Location: /ufc_v1/admin/assessments.php');
+    header('Location: ' . BASE_URL . '/admin/assessments.php');
     exit;
 }
 
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($_POST['password'] ?? '');
 
     if (loginUser($email, $password)) {
-        header('Location: /ufc_v1/admin/assessments.php');
+        header('Location: ' . BASE_URL . '/admin/assessments.php');
         exit;
     } else {
         $error = 'Invalid email or password. Please verify your credentials.';
@@ -37,7 +37,7 @@ $pageTitle = 'Sign In — UFC Client Pre-Assessment';
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Existing CSS for specific variables / classes -->
-    <link rel="stylesheet" href="/ufc_v1/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
 <body class="bg-[#060f1e] text-white antialiased min-h-screen font-sans">
     <div class="min-h-screen flex flex-col lg:flex-row">
