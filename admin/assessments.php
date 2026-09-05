@@ -17,7 +17,13 @@ ensureCheckReportColumns($pdo);
 
 // Filtering
 $statusFilter = trim($_GET['status'] ?? '');
-$searchQuery = trim($_GET['search'] ?? '');
+$searchQuery  = trim($_GET['search'] ?? '');
+$dateFrom     = trim($_GET['date_from'] ?? '');
+$dateTo       = trim($_GET['date_to']   ?? '');
+
+// Sanitise dates to Y-m-d; blank = ignored
+$dateFromSafe = preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) ? $dateFrom : '';
+$dateToSafe   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)   ? $dateTo   : '';
 
 $sql = "
     SELECT 
@@ -35,6 +41,15 @@ $params = [];
 if (!empty($statusFilter)) {
     $sql .= " AND a.status = ?";
     $params[] = $statusFilter;
+}
+
+if (!empty($dateFromSafe)) {
+    $sql .= " AND DATE(a.created_at) >= ?";
+    $params[] = $dateFromSafe;
+}
+if (!empty($dateToSafe)) {
+    $sql .= " AND DATE(a.created_at) <= ?";
+    $params[] = $dateToSafe;
 }
 
 $search = SearchService::buildClause($searchQuery, ['a.client_name', 'a.project_name', 'a.project_address', 'a.assessment_number', 'a.client_phone']);
@@ -247,47 +262,123 @@ require_once __DIR__ . '/../components/header.php';
     </div>
 
     <!-- Filter & Search Controls -->
-    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-md">
-        <!-- Status Filter Tabs -->
-        <div class="flex flex-wrap items-center gap-1 text-xs">
-            <a href="/ufc_v1/admin/assessments.php"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= empty($statusFilter) ? 'bg-[#c9a84c] text-[#060f1e]' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                All (<?= $statusCounts['ALL'] ?>)
-            </a>
-            <a href="/ufc_v1/admin/assessments.php?status=IN_PROGRESS"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'IN_PROGRESS') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                In Progress (<?= $statusCounts['IN_PROGRESS'] ?>)
-            </a>
-            <a href="/ufc_v1/admin/assessments.php?status=HOLD"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'HOLD') ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                Hold / Req (<?= $statusCounts['HOLD'] ?>)
-            </a>
-            <a href="/ufc_v1/admin/assessments.php?status=ESCALATED"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'ESCALATED') ? 'bg-purple-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                Escalated (<?= $statusCounts['ESCALATED'] ?>)
-            </a>
-            <a href="/ufc_v1/admin/assessments.php?status=PROCEED_TO_PROPOSAL"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'PROCEED_TO_PROPOSAL') ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                Passed (<?= $statusCounts['PROCEED_TO_PROPOSAL'] ?>)
-            </a>
-            <a href="/ufc_v1/admin/assessments.php?status=NOT_A_FIT"
-                class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'NOT_A_FIT') ? 'bg-red-700 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
-                Not A Fit (<?= $statusCounts['NOT_A_FIT'] ?>)
-            </a>
+    <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-4 flex flex-col gap-3 shadow-md">
+
+        <!-- Row 1: Status Tabs + Search -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+
+            <!-- Status Filter Tabs -->
+            <?php
+            // Helper: build href preserving all active filters except status
+            function statusHref(string $status, string $df, string $dt, string $sq): string
+            {
+                $p = [];
+                if ($status !== '')  $p['status']    = $status;
+                if ($df     !== '')  $p['date_from'] = $df;
+                if ($dt     !== '')  $p['date_to']   = $dt;
+                if ($sq     !== '')  $p['search']    = $sq;
+                $qs = http_build_query($p);
+                return '/ufc_v1/admin/assessments.php' . ($qs !== '' ? '?' . $qs : '');
+            }
+            ?>
+            <div class="flex flex-wrap items-center gap-1 text-xs">
+                <a href="<?= statusHref('', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= empty($statusFilter) ? 'bg-[#c9a84c] text-[#060f1e]' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    All
+                </a>
+                <a href="<?= statusHref('IN_PROGRESS', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'IN_PROGRESS') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    In Progress
+                </a>
+                <a href="<?= statusHref('HOLD', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'HOLD') ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    Hold / Req
+                </a>
+                <a href="<?= statusHref('ESCALATED', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'ESCALATED') ? 'bg-purple-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    Escalated
+                </a>
+                <a href="<?= statusHref('PROCEED_TO_PROPOSAL', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'PROCEED_TO_PROPOSAL') ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    Passed
+                </a>
+                <a href="<?= statusHref('NOT_A_FIT', $dateFromSafe, $dateToSafe, $searchQuery) ?>"
+                    class="px-3 py-1.5 rounded font-semibold transition-colors <?= ($statusFilter === 'NOT_A_FIT') ? 'bg-red-700 text-white' : 'text-slate-300 hover:bg-[#1a3a5c]' ?>">
+                    Not A Fit
+                </a>
+            </div>
+
+            <!-- Search Widget -->
+            <form action="" method="GET" id="live-search-form" class="w-full md:w-72 flex-shrink-0">
+                <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter)    ?>">
+                <input type="hidden" name="date_from" value="<?= htmlspecialchars($dateFromSafe)    ?>">
+                <input type="hidden" name="date_to" value="<?= htmlspecialchars($dateToSafe)      ?>">
+                <?= SearchService::renderInput([
+                    'id'           => 'live-search-input',
+                    'value'        => $searchQuery,
+                    'placeholder'  => 'Search client, project, ref...',
+                    'target_table' => '#assessments-table-body',
+                    'form_id'      => 'live-search-form',
+                    'debounce'     => 600,
+                    'wrapper_class' => 'relative w-full',
+                ]) ?>
+            </form>
         </div>
 
-        <!-- Search — Centralized Live Search Widget (0.6s debounce) -->
-        <form action="" method="GET" id="live-search-form" class="w-full md:w-72">
+        <!-- Row 2: Date Range Filter -->
+        <form method="GET" id="date-filter-form" class="flex flex-wrap items-end gap-3 pt-1 border-t border-[#1e3e68]">
             <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>">
-            <?= SearchService::renderInput([
-                'id'          => 'live-search-input',
-                'value'       => $searchQuery,
-                'placeholder' => 'Search client, project, ref...',
-                'target_table'=> '#assessments-table-body',
-                'form_id'     => 'live-search-form',
-                'debounce'    => 600,
-                'wrapper_class' => 'relative w-full',
-            ]) ?>
+            <input type="hidden" name="search" value="<?= htmlspecialchars($searchQuery)  ?>">
+
+            <div class="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold uppercase tracking-wider pt-0.5">
+                <i class="fa-regular fa-calendar text-[#c9a84c]"></i>
+                Date Range
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- From -->
+                <div class="flex flex-col gap-0.5">
+                    <label for="date_from_input" class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">From</label>
+                    <input type="date" name="date_from" id="date_from_input"
+                        value="<?= htmlspecialchars($dateFromSafe) ?>"
+                        class="px-2.5 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-lg text-xs text-white focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] transition-all cursor-pointer"
+                        style="color-scheme:dark">
+                </div>
+
+                <span class="text-slate-500 text-xs pb-0.5">—</span>
+
+                <!-- To -->
+                <div class="flex flex-col gap-0.5">
+                    <label for="date_to_input" class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">To</label>
+                    <input type="date" name="date_to" id="date_to_input"
+                        value="<?= htmlspecialchars($dateToSafe) ?>"
+                        class="px-2.5 py-1.5 bg-[#060f1e] border border-[#1e3e68] rounded-lg text-xs text-white focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] transition-all cursor-pointer"
+                        style="color-scheme:dark">
+                </div>
+
+                <!-- Apply -->
+                <button type="submit"
+                    class="px-3.5 py-1.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] font-bold text-[11px] rounded transition-colors self-end">
+                    Apply
+                </button>
+
+                <!-- Clear dates (only shown when dates are active) -->
+                <?php if ($dateFromSafe !== '' || $dateToSafe !== ''): ?>
+                    <a href="<?= statusHref($statusFilter, '', '', $searchQuery) ?>"
+                        class="px-3.5 py-1.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-300 font-bold text-[11px] rounded transition-colors self-end flex items-center gap-1.5">
+                        <i class="fa-solid fa-xmark text-[10px]"></i> Clear Dates
+                    </a>
+                <?php endif; ?>
+
+                <!-- Active date filter indicator -->
+                <?php if ($dateFromSafe !== '' || $dateToSafe !== ''): ?>
+                    <span class="self-end text-[10px] text-[#c9a84c] font-semibold px-2 py-1.5 bg-[#c9a84c]/10 border border-[#c9a84c]/30 rounded">
+                        <?= $dateFromSafe ? date('M j, Y', strtotime($dateFromSafe)) : '…' ?>
+                        &nbsp;→&nbsp;
+                        <?= $dateToSafe   ? date('M j, Y', strtotime($dateToSafe))   : 'today' ?>
+                    </span>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
 
