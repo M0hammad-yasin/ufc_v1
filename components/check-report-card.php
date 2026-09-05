@@ -114,7 +114,8 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                     <?= $sla['badge_html'] ?>
                 </div>
 
-                <!-- Primary Tracker Action Area -->
+                <!-- Primary Tracker Action Area (Only CEO & PM) -->
+                <?php if (hasRole(['ceo', 'pm'])): ?>
                 <div class="flex flex-col items-end gap-1">
                     <!-- ── Tracker Active: Show Action Status Dropdown ─────────── -->
                     <div class="relative inline-block text-left" id="action-status-container">
@@ -243,27 +244,8 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                             </a>
                         </div>
                     </div>
-
-                    <!-- Tracker Information Strip: tells if new timer is started or how many days have passed after first timer starts -->
-                    <!-- <?php if ($trackerExists): ?> -->
-                    <!-- <div id="tracker-info-strip" class="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-1"> -->
-                    <!-- <i class="fa-regular fa-clock text-slate-500"></i> -->
-                    <!-- <?php if ($timerCycles > 1): ?> -->
-                    <!-- <span class="text-[#c9a84c] font-semibold">New Timer Active:</span> -->
-                    <!-- <span>Day <?= $trackerDays ?> of 14</span> -->
-                    <!-- <span class="text-slate-600">·</span> -->
-                    <!-- <span class="text-slate-400"><?= $daysSinceFirst ?>d since 1st timer</span> -->
-                    <!-- <?php else: ?> -->
-                    <!-- <span>Timer: Day <?= $trackerDays ?> of 14</span> -->
-                    <!-- <?php if ($trackerActive): ?> -->
-                    <!-- <span class="text-slate-600">·</span> -->
-                    <!-- <span class="<?= $trackerExpired ? 'text-red-400' : 'text-slate-400' ?>"><?= $trackerExpired ? 'Expired' : "{$trackerLeft}d left" ?></span> -->
-                    <!-- <?php endif; ?>/ -->
-                    <!-- <?php endif; ?> -->
-                    <!-- </div> -->
-                    <!-- <?php endif; ?> -->
-
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -276,7 +258,8 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
         ?>
     </div>
 
-    <!-- 4 Milestone Checkboxes Section -->
+    <!-- 4 Milestone Checkboxes Section (Only CEO & PM) -->
+    <?php if (hasRole(['ceo', 'pm'])): ?>
     <div class="p-6 bg-[#081528]/50">
         <div class="flex items-center justify-between mb-4">
             <div>
@@ -433,6 +416,7 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
             </label>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <!-- Check Report Interactive Milestones Script -->

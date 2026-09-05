@@ -28,7 +28,7 @@ CREATE TABLE `users` (
     `name` VARCHAR(100) NOT NULL,
     `email` VARCHAR(150) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
-    `role` ENUM('admin', 'assessor', 'ceo') NOT NULL DEFAULT 'assessor',
+    `role` ENUM('admin', 'assessor', 'ceo', 'pm') NOT NULL DEFAULT 'assessor',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

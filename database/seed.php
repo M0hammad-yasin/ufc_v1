@@ -35,14 +35,14 @@ try {
     // 3. Seed Users
     $stmtUser = $pdo->prepare("INSERT INTO `users` (`name`, `email`, `password_hash`, `role`) VALUES (?, ?, ?, ?)");
     $users = [
-        ['Admin User', 'admin@ufc.com', password_hash('admin123', PASSWORD_DEFAULT), 'admin'],
-        ['Project Assessor', 'assessor@ufc.com', password_hash('assessor123', PASSWORD_DEFAULT), 'assessor'],
-        ['Ali Farhan Bhatti (CEO)', 'ceo@ufc.com', password_hash('ceo123', PASSWORD_DEFAULT), 'ceo']
+        ['Project Assessor', 'apm1@unitedfiveconstruct.com', 'APM1@ufc+-', 'assessor'],
+        ['Project Manager', 'apm2@unitedfiveconstruct.com', 'APM2@ufc+-', 'pm'],
+        ['Ali Farhan Bhatti', 'alib@unitedfiveconstruct.com', 'AliBhatti77+-', 'ceo']
     ];
     foreach ($users as $u) {
         $stmtUser->execute($u);
     }
-    echo "-> Seeded default users (admin@ufc.com, assessor@ufc.com, ceo@ufc.com).\n";
+    echo "-> Seeded default users.\n";
 
     // 4. Seed Phases
     $stmtPhase = $pdo->prepare("INSERT INTO `phases` (`phase_number`, `title`, `the_question`, `unlocks_when`, `question_count`, `weight`, `threshold`, `description`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");

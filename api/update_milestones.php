@@ -19,12 +19,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$currentUser = $_SESSION['user'] ?? null;
-if (!$currentUser) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorised']);
-    exit;
-}
+guardApi(['ceo', 'pm']);
+$currentUser = getCurrentUser();
 
 $raw = file_get_contents('php://input');
 $body = json_decode($raw, true) ?? $_POST;
