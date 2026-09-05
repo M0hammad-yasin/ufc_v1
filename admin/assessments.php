@@ -142,7 +142,7 @@ function renderAssessmentRows(array $assessments, string $searchQuery = ''): str
                     <?php if ($ass['hold_deadline_date'] && $status === 'HOLD'): ?>
                         <div class="text-[10px] text-slate-400 mt-1">Due: <?= formatDate($ass['hold_deadline_date']) ?></div>
                     <?php endif; ?>
-                    <?php if ($sla['is_active']): ?>
+                    <?php if ($sla['is_active'] && hasRole(['ceo', 'pm'])): ?>
                         <div class="mt-1.5 flex items-center">
                             <?= $sla['badge_html'] ?>
                         </div>

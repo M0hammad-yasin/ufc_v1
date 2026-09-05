@@ -109,142 +109,140 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
 
             <!-- Right: Action & SLA Notification -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <!-- SLA Notification Badge Container -->
-                <div id="sla-badge-container">
-                    <?= $sla['badge_html'] ?>
-                </div>
-
                 <!-- Primary Tracker Action Area (Only CEO & PM) -->
                 <?php if (hasRole(['ceo', 'pm'])): ?>
-                <div class="flex flex-col items-end gap-1">
-                    <!-- ── Tracker Active: Show Action Status Dropdown ─────────── -->
-                    <div class="relative inline-block text-left" id="action-status-container">
-                        <button type="button"
-                            id="btn-action-status"
-                            onclick="toggleStatusDropdown(event)"
-                            class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-bolt text-xs"></i>
-                            <span>Action Status</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
-                        </button>
-
-                        <!-- Dropdown Menu -->
-                        <div id="status-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 overflow-hidden py-1">
-                            <div class="px-3.5 py-2 border-b border-[#1e3e68] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                Tracker Actions
-                            </div>
-
-                            <?php if ($trackerStopped): ?>
-                                <button type="button"
-                                    id="btn-resume-tracker"
-                                    onclick="resumeTracker(<?= $assessmentId ?>)"
-                                    class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-bold rounded shadow border border-[#1e3e68] transition-all flex items-center gap-2 cursor-pointer">
-                                    <i class="fa-solid fa-rotate-right text-xs text-[#c9a84c]"></i>
-                                    <span>Resume (New 14 Days)</span>
-                                </button>
-                            <?php endif; ?>
-                            <!-- 1. Assessment Completed — dynamic render ONLY if all 4 phases passed -->
-                            <?php if ($allPhasesPassed && $trackerActive): ?>
-                                <button type="button"
-                                    onclick="setTrackerStatus(<?= $assessmentId ?>, 'ASSESSMENT_COMPLETED')"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                                    <div>
-                                        <div>Assessment Completed</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">All 4 phases passed · stop timer</div>
-                                    </div>
-                                </button>
-                            <?php endif; ?>
-
-                            <!-- 2. Discard (14 days passed) — show but lock if < 14 days with (i) tooltip -->
-                            <?php if ($trackerExpired): ?>
-                                <button type="button"
-                                    onclick="setTrackerStatus(<?= $assessmentId ?>, 'DISCARDED')"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-amber-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-ban text-amber-400 text-sm"></i>
-                                    <div>
-                                        <div>Discard</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">14 days elapsed since timer started</div>
-                                    </div>
-                                </button>
-                            <?php else: ?>
-                                <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
-                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
-                                    <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-slate-500">Discard</span>
-                                            <span class="px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700 flex items-center gap-1 cursor-help"
-                                                title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
-                                                <i class="fa-solid fa-info-circle text-[9px] text-amber-400"></i>
-                                                <span><?= $trackerLeft ?>d left</span>
-                                            </span>
-                                        </div>
-                                        <div class="text-[10px] text-slate-600 font-normal">Locked (14 days not elapsed)</div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-
-                            <!-- 3. Rejected / Not Fit (client ran away or client requirement insufficient) -->
-                            <?php if ($trackerActive): ?>
-                                <button type="button"
-                                    onclick="setTrackerStatus(<?= $assessmentId ?>, 'REJECTED')"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-red-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-circle-xmark text-red-400 text-sm"></i>
-                                    <div>
-                                        <div>Rejected / Not Fit</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">Client ran away or insufficient reqs</div>
-                                    </div>
-                                </button>
-                            <?php else: ?>
-                                <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
-                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
-                                    <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-slate-500">Rejected / Not Fit</span>
-                                        </div>
-                                        <div class="text-[10px] text-slate-600 font-normal">Locked (tracker is not started)</div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            <div class="border-t border-[#1e3e68] my-1"></div>
-
-                            <!-- 4. Send Requirements Letter — ONLY when a phase has status HOLD due to client insufficient data -->
-                            <?php if ($hasPhaseOnHold): ?>
-                                <button type="button"
-                                    onclick="openEmailModal('send_letter')"
-                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-blue-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                    <i class="fa-solid fa-envelope-open-text text-blue-400 text-sm"></i>
-                                    <div>
-                                        <div>Send Requirements Letter</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">Phase on HOLD · Request info</div>
-                                    </div>
-                                </button>
-                            <?php endif; ?>
-
-                            <!-- 5. Send Lead Summary -->
+                    <div id="sla-badge-container">
+                        <?= $sla['badge_html'] ?>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                        <!-- ── Tracker Active: Show Action Status Dropdown ─────────── -->
+                        <div class="relative inline-block text-left" id="action-status-container">
                             <button type="button"
-                                onclick="openEmailModal('send_lead_summary')"
-                                class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-sky-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
-                                <i class="fa-solid fa-address-card text-sky-400 text-sm"></i>
-                                <div>
-                                    <div>Send Lead &amp; Contact Data</div>
-                                    <div class="text-[10px] text-slate-400 font-normal">Email lead summary sheet</div>
-                                </div>
+                                id="btn-action-status"
+                                onclick="toggleStatusDropdown(event)"
+                                class="px-4 py-2 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-all flex items-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-bolt text-xs"></i>
+                                <span>Action Status</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
                             </button>
 
-                            <div class="border-t border-[#1e3e68] my-1"></div>
+                            <!-- Dropdown Menu -->
+                            <div id="status-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 rounded-xl bg-[#0d1f3c] border border-[#1e3e68] shadow-2xl z-50 overflow-hidden py-1">
+                                <div class="px-3.5 py-2 border-b border-[#1e3e68] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Tracker Actions
+                                </div>
 
-                            <!-- 6. Edit Assessment -->
-                            <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
-                                class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
-                                <i class="fa-solid fa-play text-[#c9a84c] text-xs"></i>
-                                <span>Edit assessment</span>
-                            </a>
+                                <?php if ($trackerStopped): ?>
+                                    <button type="button"
+                                        id="btn-resume-tracker"
+                                        onclick="resumeTracker(<?= $assessmentId ?>)"
+                                        class="px-3.5 py-2 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-bold rounded shadow border border-[#1e3e68] transition-all flex items-center gap-2 cursor-pointer">
+                                        <i class="fa-solid fa-rotate-right text-xs text-[#c9a84c]"></i>
+                                        <span>Resume (New 14 Days)</span>
+                                    </button>
+                                <?php endif; ?>
+                                <!-- 1. Assessment Completed — dynamic render ONLY if all 4 phases passed -->
+                                <?php if ($allPhasesPassed && $trackerActive): ?>
+                                    <button type="button"
+                                        onclick="setTrackerStatus(<?= $assessmentId ?>, 'ASSESSMENT_COMPLETED')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-emerald-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+                                        <div>
+                                            <div>Assessment Completed</div>
+                                            <div class="text-[10px] text-slate-400 font-normal">All 4 phases passed · stop timer</div>
+                                        </div>
+                                    </button>
+                                <?php endif; ?>
+
+                                <!-- 2. Discard (14 days passed) — show but lock if < 14 days with (i) tooltip -->
+                                <?php if ($trackerExpired): ?>
+                                    <button type="button"
+                                        onclick="setTrackerStatus(<?= $assessmentId ?>, 'DISCARDED')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-amber-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                        <i class="fa-solid fa-ban text-amber-400 text-sm"></i>
+                                        <div>
+                                            <div>Discard</div>
+                                            <div class="text-[10px] text-slate-400 font-normal">14 days elapsed since timer started</div>
+                                        </div>
+                                    </button>
+                                <?php else: ?>
+                                    <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
+                                        title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                        <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-slate-500">Discard</span>
+                                                <span class="px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700 flex items-center gap-1 cursor-help"
+                                                    title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                                    <i class="fa-solid fa-info-circle text-[9px] text-amber-400"></i>
+                                                    <span><?= $trackerLeft ?>d left</span>
+                                                </span>
+                                            </div>
+                                            <div class="text-[10px] text-slate-600 font-normal">Locked (14 days not elapsed)</div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- 3. Rejected / Not Fit (client ran away or client requirement insufficient) -->
+                                <?php if ($trackerActive): ?>
+                                    <button type="button"
+                                        onclick="setTrackerStatus(<?= $assessmentId ?>, 'REJECTED')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-red-400 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                        <i class="fa-solid fa-circle-xmark text-red-400 text-sm"></i>
+                                        <div>
+                                            <div>Rejected / Not Fit</div>
+                                            <div class="text-[10px] text-slate-400 font-normal">Client ran away or insufficient reqs</div>
+                                        </div>
+                                    </button>
+                                <?php else: ?>
+                                    <div class="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2.5 cursor-not-allowed select-none bg-slate-900/40"
+                                        title="14 days have not elapsed or passed yet. <?= $trackerLeft ?> day(s) remaining.">
+                                        <i class="fa-solid fa-ban text-slate-600 text-sm"></i>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-slate-500">Rejected / Not Fit</span>
+                                            </div>
+                                            <div class="text-[10px] text-slate-600 font-normal">Locked (tracker is not started)</div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="border-t border-[#1e3e68] my-1"></div>
+
+                                <!-- 4. Send Requirements Letter — ONLY when a phase has status HOLD due to client insufficient data -->
+                                <?php if ($hasPhaseOnHold): ?>
+                                    <button type="button"
+                                        onclick="openEmailModal('send_letter')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-blue-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                        <i class="fa-solid fa-envelope-open-text text-blue-400 text-sm"></i>
+                                        <div>
+                                            <div>Send Requirements Letter</div>
+                                            <div class="text-[10px] text-slate-400 font-normal">Phase on HOLD · Request info</div>
+                                        </div>
+                                    </button>
+                                <?php endif; ?>
+
+                                <!-- 5. Send Lead Summary -->
+                                <button type="button"
+                                    onclick="openEmailModal('send_lead_summary')"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-sky-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
+                                    <i class="fa-solid fa-address-card text-sky-400 text-sm"></i>
+                                    <div>
+                                        <div>Send Lead &amp; Contact Data</div>
+                                        <div class="text-[10px] text-slate-400 font-normal">Email lead summary sheet</div>
+                                    </div>
+                                </button>
+
+                                <div class="border-t border-[#1e3e68] my-1"></div>
+
+                                <!-- 6. Edit Assessment -->
+                                <a href="/ufc_v1/assessment/question.php?id=<?= $assessmentId ?>"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors">
+                                    <i class="fa-solid fa-play text-[#c9a84c] text-xs"></i>
+                                    <span>Edit assessment</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -260,162 +258,162 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
 
     <!-- 4 Milestone Checkboxes Section (Only CEO & PM) -->
     <?php if (hasRole(['ceo', 'pm'])): ?>
-    <div class="p-6 bg-[#081528]/50">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <h3 class="font-serif text-sm font-bold text-slate-200 uppercase tracking-wider">
-                        Lead Qualification &amp; Conversion Milestones
-                    </h3>
-                    <?php if (!$milestonesUnlocked): ?>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-600/50 flex items-center gap-1">
-                            <i class="fa-solid fa-lock text-[9px]"></i>
-                            <span>Milestones 2-4 Locked (Requires All 4 Phases Passed)</span>
-                        </span>
-                    <?php else: ?>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/50 flex items-center gap-1">
-                            <i class="fa-solid fa-lock-open text-[9px]"></i>
-                            <span>Milestones Unlocked</span>
-                        </span>
-                    <?php endif; ?>
-                </div>
-                <p class="text-[11px] text-slate-400 mt-1">Track key lifecycle checkpoints for this lead below. Changes save automatically.</p>
-            </div>
-            <span id="milestone-save-status" class="hidden text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-check"></i> Saved
-            </span>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- 1. Assessment Checkbox (ALWAYS LOCKED, AUTO-CHECKED IF ALL 4 PHASES ASSESSED) -->
-            <div class="group relative flex items-start gap-3.5 p-4 rounded-xl border select-none transition-all <?= $chkAssessment ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
-                title="Auto-verified: Checked automatically when all 4 phases are assessed. Always locked for manual input.">
-                <div class="flex items-center h-5 mt-0.5">
-                    <input type="checkbox"
-                        id="chk-assessment"
-                        <?= $chkAssessment ? 'checked' : '' ?>
-                        disabled
-                        class="w-4 h-4 rounded text-emerald-500 bg-[#060f1e] border-[#1e3e68] cursor-not-allowed opacity-90 pointer-events-none">
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-xs text-slate-100">1. Assessment</span>
-                            <i class="fa-solid fa-lock text-[10px] text-slate-500" title="Locked (automatic gate)"></i>
-                        </div>
-                        <span id="badge-assessment" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkAssessment ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkAssessment ? 'Completed' : 'Pending' ?>
-                        </span>
+        <div class="p-6 bg-[#081528]/50">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-serif text-sm font-bold text-slate-200 uppercase tracking-wider">
+                            Lead Qualification &amp; Conversion Milestones
+                        </h3>
+                        <?php if (!$milestonesUnlocked): ?>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-600/50 flex items-center gap-1">
+                                <i class="fa-solid fa-lock text-[9px]"></i>
+                                <span>Milestones 2-4 Locked (Requires All 4 Phases Passed)</span>
+                            </span>
+                        <?php else: ?>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/50 flex items-center gap-1">
+                                <i class="fa-solid fa-lock-open text-[9px]"></i>
+                                <span>Milestones Unlocked</span>
+                            </span>
+                        <?php endif; ?>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        Auto-verified once all 4 phases are run &amp; questions completed.
-                    </p>
-                    <div id="time-assessment" class="text-[10px] text-slate-500 mt-2 font-mono">
-                        <?= $chkAssessment ? 'All 4 phases assessed' : 'Pending completion of all 4 phases' ?>
-                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Track key lifecycle checkpoints for this lead below. Changes save automatically.</p>
                 </div>
+                <span id="milestone-save-status" class="hidden text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                    <i class="fa-solid fa-check"></i> Saved
+                </span>
             </div>
 
-            <!-- 2. Walk Through Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkWalkThrough ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
-                title="<?= $milestonesUnlocked ? 'Toggle Walk Through milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
-                <div class="flex items-center h-5 mt-0.5">
-                    <input type="checkbox"
-                        id="chk-walk-through"
-                        data-checkpoint="walk_through"
-                        data-assessment-id="<?= (int)$assessment['id'] ?>"
-                        <?= $chkWalkThrough ? 'checked' : '' ?>
-                        <?= !$milestonesUnlocked ? 'disabled' : '' ?>
-                        class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
-                </div>
-                <div class="flex-1 select-none">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">2. Walk Through</span>
-                            <?php if (!$milestonesUnlocked): ?>
-                                <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
-                            <?php endif; ?>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- 1. Assessment Checkbox (ALWAYS LOCKED, AUTO-CHECKED IF ALL 4 PHASES ASSESSED) -->
+                <div class="group relative flex items-start gap-3.5 p-4 rounded-xl border select-none transition-all <?= $chkAssessment ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
+                    title="Auto-verified: Checked automatically when all 4 phases are assessed. Always locked for manual input.">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input type="checkbox"
+                            id="chk-assessment"
+                            <?= $chkAssessment ? 'checked' : '' ?>
+                            disabled
+                            class="w-4 h-4 rounded text-emerald-500 bg-[#060f1e] border-[#1e3e68] cursor-not-allowed opacity-90 pointer-events-none">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-xs text-slate-100">1. Assessment</span>
+                                <i class="fa-solid fa-lock text-[10px] text-slate-500" title="Locked (automatic gate)"></i>
+                            </div>
+                            <span id="badge-assessment" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkAssessment ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                                <?= $chkAssessment ? 'Completed' : 'Pending' ?>
+                            </span>
                         </div>
-                        <span id="badge-walk-through" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkWalkThrough ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkWalkThrough ? 'Completed' : 'Pending' ?>
-                        </span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        On-site / virtual project walkthrough &amp; discovery held.
-                    </p>
-                    <div id="time-walk-through" class="text-[10px] text-slate-500 mt-2 font-mono">
-                        <?= $assessment['checkpoint_client_meetup_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_client_meetup_at'], 'M j, Y H:i') : 'Pending walkthrough' ?>
+                        <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+                            Auto-verified once all 4 phases are run &amp; questions completed.
+                        </p>
+                        <div id="time-assessment" class="text-[10px] text-slate-500 mt-2 font-mono">
+                            <?= $chkAssessment ? 'All 4 phases assessed' : 'Pending completion of all 4 phases' ?>
+                        </div>
                     </div>
                 </div>
-            </label>
 
-            <!-- 3. Proposal Submission Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkProposalSubmission ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
-                title="<?= $milestonesUnlocked ? 'Toggle Proposal Submission milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
-                <div class="flex items-center h-5 mt-0.5">
-                    <input type="checkbox"
-                        id="chk-proposal-submission"
-                        data-checkpoint="proposal_submission"
-                        data-assessment-id="<?= (int)$assessment['id'] ?>"
-                        <?= $chkProposalSubmission ? 'checked' : '' ?>
-                        <?= !$milestonesUnlocked ? 'disabled' : '' ?>
-                        class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
-                </div>
-                <div class="flex-1 select-none">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">3. Proposal Submission</span>
-                            <?php if (!$milestonesUnlocked): ?>
-                                <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
-                            <?php endif; ?>
+                <!-- 2. Walk Through Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
+                <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkWalkThrough ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
+                    title="<?= $milestonesUnlocked ? 'Toggle Walk Through milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input type="checkbox"
+                            id="chk-walk-through"
+                            data-checkpoint="walk_through"
+                            data-assessment-id="<?= (int)$assessment['id'] ?>"
+                            <?= $chkWalkThrough ? 'checked' : '' ?>
+                            <?= !$milestonesUnlocked ? 'disabled' : '' ?>
+                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
+                    </div>
+                    <div class="flex-1 select-none">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">2. Walk Through</span>
+                                <?php if (!$milestonesUnlocked): ?>
+                                    <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
+                                <?php endif; ?>
+                            </div>
+                            <span id="badge-walk-through" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkWalkThrough ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                                <?= $chkWalkThrough ? 'Completed' : 'Pending' ?>
+                            </span>
                         </div>
-                        <span id="badge-proposal-submission" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkProposalSubmission ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkProposalSubmission ? 'Completed' : 'Pending' ?>
-                        </span>
+                        <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+                            On-site / virtual project walkthrough &amp; discovery held.
+                        </p>
+                        <div id="time-walk-through" class="text-[10px] text-slate-500 mt-2 font-mono">
+                            <?= $assessment['checkpoint_client_meetup_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_client_meetup_at'], 'M j, Y H:i') : 'Pending walkthrough' ?>
+                        </div>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        Full scope, line items &amp; initial pricing delivered.
-                    </p>
-                    <div id="time-proposal-submission" class="text-[10px] text-slate-500 mt-2 font-mono">
-                        <?= $assessment['checkpoint_build_proposal_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_build_proposal_at'], 'M j, Y H:i') : 'Pending proposal' ?>
-                    </div>
-                </div>
-            </label>
+                </label>
 
-            <!-- 4. Final Bid Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
-            <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkFinalBid ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
-                title="<?= $milestonesUnlocked ? 'Toggle Final Bid milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
-                <div class="flex items-center h-5 mt-0.5">
-                    <input type="checkbox"
-                        id="chk-final-bid"
-                        data-checkpoint="final_bid"
-                        data-assessment-id="<?= (int)$assessment['id'] ?>"
-                        <?= $chkFinalBid ? 'checked' : '' ?>
-                        <?= !$milestonesUnlocked ? 'disabled' : '' ?>
-                        class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
-                </div>
-                <div class="flex-1 select-none">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">4. Final Bid</span>
-                            <?php if (!$milestonesUnlocked): ?>
-                                <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
-                            <?php endif; ?>
+                <!-- 3. Proposal Submission Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
+                <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkProposalSubmission ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
+                    title="<?= $milestonesUnlocked ? 'Toggle Proposal Submission milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input type="checkbox"
+                            id="chk-proposal-submission"
+                            data-checkpoint="proposal_submission"
+                            data-assessment-id="<?= (int)$assessment['id'] ?>"
+                            <?= $chkProposalSubmission ? 'checked' : '' ?>
+                            <?= !$milestonesUnlocked ? 'disabled' : '' ?>
+                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
+                    </div>
+                    <div class="flex-1 select-none">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">3. Proposal Submission</span>
+                                <?php if (!$milestonesUnlocked): ?>
+                                    <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
+                                <?php endif; ?>
+                            </div>
+                            <span id="badge-proposal-submission" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkProposalSubmission ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                                <?= $chkProposalSubmission ? 'Completed' : 'Pending' ?>
+                            </span>
                         </div>
-                        <span id="badge-final-bid" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkFinalBid ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
-                            <?= $chkFinalBid ? 'Completed' : 'Pending' ?>
-                        </span>
+                        <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+                            Full scope, line items &amp; initial pricing delivered.
+                        </p>
+                        <div id="time-proposal-submission" class="text-[10px] text-slate-500 mt-2 font-mono">
+                            <?= $assessment['checkpoint_build_proposal_at'] ? 'Marked: ' . formatDate($assessment['checkpoint_build_proposal_at'], 'M j, Y H:i') : 'Pending proposal' ?>
+                        </div>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-                        Final revised bid &amp; contract execution confirmed.
-                    </p>
-                    <div id="time-final-bid" class="text-[10px] text-slate-500 mt-2 font-mono">
-                        <?= (!empty($assessment['checkpoint_final_bid_at'])) ? 'Marked: ' . formatDate($assessment['checkpoint_final_bid_at'], 'M j, Y H:i') : 'Pending final bid' ?>
+                </label>
+
+                <!-- 4. Final Bid Checkbox (LOCKED IF NOT ALL PHASES PASSED) -->
+                <label class="group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all <?= $milestonesUnlocked ? 'cursor-pointer hover:border-[#2a558c]' : 'cursor-not-allowed opacity-60' ?> <?= $chkFinalBid ? 'bg-[#122849]/90 border-emerald-500/50 shadow-md' : 'bg-[#0a172c]/70 border-[#1e3e68]' ?>"
+                    title="<?= $milestonesUnlocked ? 'Toggle Final Bid milestone' : 'Locked: All 4 phases must have PASS status to unlock this milestone.' ?>">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input type="checkbox"
+                            id="chk-final-bid"
+                            data-checkpoint="final_bid"
+                            data-assessment-id="<?= (int)$assessment['id'] ?>"
+                            <?= $chkFinalBid ? 'checked' : '' ?>
+                            <?= !$milestonesUnlocked ? 'disabled' : '' ?>
+                            class="w-4 h-4 rounded text-[#c9a84c] bg-[#060f1e] border-[#1e3e68] focus:ring-[#c9a84c] focus:ring-offset-0 <?= $milestonesUnlocked ? 'cursor-pointer' : 'cursor-not-allowed' ?> transition-colors">
                     </div>
-                </div>
-            </label>
+                    <div class="flex-1 select-none">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-xs text-slate-100 group-hover:text-white transition-colors">4. Final Bid</span>
+                                <?php if (!$milestonesUnlocked): ?>
+                                    <i class="fa-solid fa-lock text-[10px] text-amber-500/70" title="Locked (requires all phases PASS)"></i>
+                                <?php endif; ?>
+                            </div>
+                            <span id="badge-final-bid" class="text-[10px] font-bold px-2 py-0.5 rounded <?= $chkFinalBid ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/60' : 'bg-slate-800 text-slate-400' ?>">
+                                <?= $chkFinalBid ? 'Completed' : 'Pending' ?>
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1 leading-snug">
+                            Final revised bid &amp; contract execution confirmed.
+                        </p>
+                        <div id="time-final-bid" class="text-[10px] text-slate-500 mt-2 font-mono">
+                            <?= (!empty($assessment['checkpoint_final_bid_at'])) ? 'Marked: ' . formatDate($assessment['checkpoint_final_bid_at'], 'M j, Y H:i') : 'Pending final bid' ?>
+                        </div>
+                    </div>
+                </label>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 </div>
 
