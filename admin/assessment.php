@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/questions.php';
 require_once __DIR__ . '/../includes/evaluation.php';
+require_once __DIR__ . '/../components/report-body.php';
 
 requireLogin();
 $currentUser = getCurrentUser();
@@ -205,6 +206,14 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
         </button>
 
         <button type="button"
+            id="tab-btn-report"
+            onclick="switchViewTab('report')"
+            class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
+            <i class="fa-regular fa-file-lines text-xs"></i>
+            <span>Report Body</span>
+        </button>
+
+        <button type="button"
             id="tab-btn-audit"
             onclick="switchViewTab('audit')"
             class="view-tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 text-slate-300 hover:text-white hover:bg-[#1a3a5c]">
@@ -329,7 +338,37 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
         <?php endforeach; ?>
     </div>
 
-    <!-- ══ TAB CONTENT 3: AUDIT HISTORY & OVERRIDES ══════════════════════════ -->
+    <!-- ══ TAB CONTENT 3: REPORT BODY ══════════════════════════════════════════ -->
+    <div id="tab-content-report" class="view-tab-pane hidden">
+        <!-- Toolbar -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#0d1f3c] border border-[#1e3e68] rounded-xl px-5 py-3 shadow-md">
+            <div class="flex items-center gap-2">
+                <i class="fa-regular fa-file-lines text-[#c9a84c]"></i>
+                <span class="text-sm font-bold text-white">Report Body</span>
+                <span class="text-xs text-slate-400 ml-1">&mdash; <?= htmlspecialchars($assessment['assessment_number']) ?></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/ufc_v1/assessment/report.php?id=<?= $assessmentId ?>"
+                   target="_blank"
+                   class="px-3.5 py-1.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-xs font-semibold rounded border border-[#1e3e68] transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    <span>Open in Full Page</span>
+                </a>
+                <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
+                   class="px-3.5 py-1.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-xs font-bold rounded shadow transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-pdf text-xs"></i>
+                    <span>Download PDF</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Report body render -->
+        <div class="mt-4">
+            <?= renderReportBody($assessmentId, false) ?>
+        </div>
+    </div>
+
+    <!-- ══ TAB CONTENT 4: AUDIT HISTORY & OVERRIDES ══════════════════════════ -->
     <div id="tab-content-audit" class="view-tab-pane space-y-6 hidden">
         <!-- CEO Overrides & Review Panel (For CEO or Admin) -->
         <?php if (isCeo() || isAdmin()): ?>
@@ -429,10 +468,10 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
 
 <script>
     function switchViewTab(tabKey) {
-        const tabs = ['check-report', 'phases', 'audit'];
+        const tabs = ['check-report', 'phases', 'report', 'audit'];
         tabs.forEach(t => {
             const pane = document.getElementById(`tab-content-${t}`);
-            const btn = document.getElementById(`tab-btn-${t}`);
+            const btn  = document.getElementById(`tab-btn-${t}`);
             if (pane) {
                 pane.classList.toggle('hidden', t !== tabKey);
             }
@@ -450,11 +489,12 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
         window.history.replaceState({}, '', url.toString());
     }
 
-    // Support auto-open from query param ?tab=phases or ?tab=audit
+    // Support auto-open from query param ?tab=...
     (function() {
-        const params = new URLSearchParams(window.location.search);
+        const params   = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');
-        if (tabParam && (tabParam === 'phases' || tabParam === 'audit' || tabParam === 'check-report')) {
+        const valid    = ['check-report', 'phases', 'report', 'audit'];
+        if (tabParam && valid.includes(tabParam)) {
             switchViewTab(tabParam);
         }
     })();
