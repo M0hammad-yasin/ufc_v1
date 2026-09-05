@@ -1,4 +1,5 @@
 <?php
+
 /**
  * components/report-body.php
  * ─────────────────────────────────────────────────────────────────────────
@@ -74,10 +75,11 @@ function getAssessmentReportData(int $assessmentId): array
     // ── All answers for this assessment ───────────────────────────────────
     $ansStmt = $pdo->prepare("
         SELECT aa.*,
-               q.question_number, q.question_text, q.phase_id, q.trigger_type
+               q.question_number, q.question_text, q.phase_id, q.trigger_type, q.owner
         FROM   `assessment_answers` aa
         JOIN   `questions`           q  ON aa.question_id = q.id
         WHERE  aa.assessment_id = ?
+        ORDER  BY q.phase_id ASC, q.order_index ASC
     ");
     $ansStmt->execute([$assessmentId]);
     $allAnswers = $ansStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -120,7 +122,7 @@ function getAssessmentReportData(int $assessmentId): array
             'score_earned'   => (float)$r['score_earned'],
             'score_possible' => (float)$r['score_possible'],
             'score_percent'  => $scorePct,
-            'avg_score_on_10'=> round($scorePct / 10, 2),
+            'avg_score_on_10' => round($scorePct / 10, 2),
             'status'         => $r['status'],
             'passed'         => $passed,
             'red_count'      => (int)$r['red_count'],
@@ -141,16 +143,15 @@ function getAssessmentReportData(int $assessmentId): array
 
     $overallScore = ($totalWeight > 0) ? round($weightedSum / $totalWeight, 1) : 0.0;
 
-    // Verdict: any rejected phase → NO-GO; else score-based (100% scale)
-    if (!empty($phaseRejected)) {
-        $verdict = 'NO-GO';
-    } elseif ($overallScore >= 70.0) {
-        $verdict = 'GO';
-    } elseif ($overallScore >= 55.0) {
-        $verdict = 'HOLD';
-    } else {
-        $verdict = 'NO-GO';
-    }
+    // Verdict from assessment status or phase results
+    $assessmentStatus = $assessment['status'] ?? 'IN_PROGRESS';
+    $verdict = match ($assessmentStatus) {
+        'PROCEED_TO_PROPOSAL' => 'GO',
+        'NOT_A_FIT'           => 'NO-GO',
+        'HOLD'                => 'HOLD',
+        'ESCALATED'           => 'ESCALATED',
+        default               => (!empty($phaseRejected) ? 'NO-GO' : ($overallScore >= 70.0 ? 'GO' : ($overallScore >= 55.0 ? 'HOLD' : 'IN_PROGRESS'))),
+    };
 
     // ── Build flags from RED / AMBER answers ──────────────────────────────
     $flags = [];
@@ -158,6 +159,13 @@ function getAssessmentReportData(int $assessmentId): array
         $light   = $ans['status_light']  ?? 'GREEN';
         $trigger = $ans['trigger_fired'] ?? 'NONE';
         if ($light !== 'RED' && $light !== 'AMBER') {
+            continue;
+        }
+
+        // Options marked not applicable must NOT increase or be counted as amber
+        $ansVal = strtoupper(trim((string)($ans['answer_value'] ?? '')));
+        $isNotApplicable = ($ansVal === 'NOT_APPLICABLE' || $ansVal === 'NA' || (isset($ans['is_applicable']) && (int)$ans['is_applicable'] === 0));
+        if ($light === 'AMBER' && $isNotApplicable) {
             continue;
         }
 
@@ -177,6 +185,7 @@ function getAssessmentReportData(int $assessmentId): array
             'trigger'          => $trigger,
             'statusLight'      => $light,
             'severity'         => $severity,
+            'owner'            => $ans['owner']                 ?? null,
             'reason'           => $explain['reason']            ?? null,
             'responsibleParty' => $explain['responsible_party'] ?? null,
             'targetCureDate'   => $explain['target_cure_date']  ?? null,
@@ -218,19 +227,24 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
 
     // ── Verdict styling ───────────────────────────────────────────────────
     $vColor = match ($verdict) {
-        'GO'    => RPT_GREEN,
-        'NO-GO' => RPT_RED,
-        default => RPT_GOLD,
+        'GO'        => RPT_GREEN,
+        'NO-GO'     => RPT_RED,
+        'ESCALATED' => '#c084fc',
+        default     => RPT_GOLD,
     };
     $verdictLabel = match ($verdict) {
-        'GO'    => 'GO — PROCEED TO PROPOSAL',
-        'NO-GO' => 'NO-GO — HARD REJECT',
-        default => 'HOLD — ESCALATE TO CEO',
+        'GO'          => 'GO — PROCEED TO PROPOSAL',
+        'NO-GO'       => 'NO-GO — HARD REJECT',
+        'ESCALATED'   => 'HOLD — ESCALATED TO CEO',
+        'IN_PROGRESS' => 'IN PROGRESS',
+        default       => 'HOLD — REQUIREMENTS OUTSTANDING',
     };
     $verdictBgClass = match ($verdict) {
-        'GO'    => 'bg-emerald-950/60 border-emerald-500 text-emerald-200',
-        'NO-GO' => 'bg-red-950/60 border-red-500 text-red-200',
-        default => 'bg-amber-950/60 border-[#c9a84c] text-[#c9a84c]',
+        'GO'          => 'bg-emerald-950/60 border-emerald-500 text-emerald-200',
+        'NO-GO'       => 'bg-red-950/60 border-red-500 text-red-200',
+        'ESCALATED'   => 'bg-purple-950/60 border-purple-500 text-purple-200',
+        'IN_PROGRESS' => 'bg-blue-950/60 border-blue-500 text-blue-200',
+        default       => 'bg-amber-950/60 border-[#c9a84c] text-[#c9a84c]',
     };
     $riskLabel = match (true) {
         $overallScore >= 80.0 => 'Low Risk',
@@ -260,7 +274,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                 ? 'bg-red-950 text-red-300 border-red-500'
                 : 'bg-amber-950 text-amber-300 border-amber-500');
         $phaseFlags  = count(array_filter($flags, fn($f) => $f['phaseId'] === $r['id']));
-        ?>
+?>
         <div class="space-y-2 p-4 rounded-lg border border-[#1e3e68] bg-[#060f1e]/50 hover:bg-[#060f1e] transition-colors">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -288,7 +302,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
             </div>
             <div class="w-full bg-[#1a3a5c] rounded-full h-1.5 overflow-hidden border border-[#1e3e68]">
                 <div class="h-1.5 rounded-full transition-all duration-700"
-                     style="width:<?= $barWidth ?>%;background:<?= $barColor ?>"></div>
+                    style="width:<?= $barWidth ?>%;background:<?= $barColor ?>"></div>
             </div>
             <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
                 <span>Score: <strong class="text-slate-300"><?= number_format($r['score_earned'], 1) ?> / <?= number_format($r['score_possible'], 1) ?></strong></span>
@@ -304,30 +318,38 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                 <?php endif; ?>
             </div>
         </div>
-        <?php
+    <?php
     }
     $phaseRowsHtml = ob_get_clean();
 
     // ── ③ Financial risk cards ────────────────────────────────────────────
     $finItems = [
-        ['label' => 'Profit margin viability',
-         'value' => $overallScore >= 70.0 ? 'Protected' : ($overallScore >= 55.0 ? 'Marginal'    : 'At risk'),
-         'color' => $overallScore >= 70.0 ? RPT_GREEN   : ($overallScore >= 55.0 ? RPT_GOLD       : RPT_RED)],
-        ['label' => 'Overhead coverage',
-         'value' => $overallScore >= 65.0 ? 'Adequate'   : 'Insufficient',
-         'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED],
-        ['label' => 'CEO compensation %',
-         'value' => $overallScore >= 65.0 ? 'Preserved'  : 'Compressed',
-         'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED],
-        ['label' => 'Savings retention',
-         'value' => $overallScore >= 75.0 ? 'Strong'     : ($overallScore >= 60.0 ? 'Moderate'   : 'Weak'),
-         'color' => $overallScore >= 75.0 ? RPT_GREEN    : ($overallScore >= 60.0 ? RPT_GOLD       : RPT_RED)],
+        [
+            'label' => 'Profit margin viability',
+            'value' => $overallScore >= 70.0 ? 'Protected' : ($overallScore >= 55.0 ? 'Marginal'    : 'At risk'),
+            'color' => $overallScore >= 70.0 ? RPT_GREEN   : ($overallScore >= 55.0 ? RPT_GOLD       : RPT_RED)
+        ],
+        [
+            'label' => 'Overhead coverage',
+            'value' => $overallScore >= 65.0 ? 'Adequate'   : 'Insufficient',
+            'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED
+        ],
+        [
+            'label' => 'CEO compensation %',
+            'value' => $overallScore >= 65.0 ? 'Preserved'  : 'Compressed',
+            'color' => $overallScore >= 65.0 ? RPT_GREEN    : RPT_RED
+        ],
+        [
+            'label' => 'Savings retention',
+            'value' => $overallScore >= 75.0 ? 'Strong'     : ($overallScore >= 60.0 ? 'Moderate'   : 'Weak'),
+            'color' => $overallScore >= 75.0 ? RPT_GREEN    : ($overallScore >= 60.0 ? RPT_GOLD       : RPT_RED)
+        ],
     ];
 
     ob_start();
     foreach ($finItems as $fi): ?>
         <div class="flex items-center justify-between p-3 rounded-lg border border-[#1e3e68] bg-[#060f1e]/50"
-             style="border-left:3px solid <?= $fi['color'] ?>">
+            style="border-left:3px solid <?= $fi['color'] ?>">
             <span class="text-xs text-slate-300 font-medium"><?= htmlspecialchars($fi['label']) ?></span>
             <span class="text-xs font-bold" style="color:<?= $fi['color'] ?>"><?= $fi['value'] ?></span>
         </div>
@@ -335,7 +357,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
     $finCardsHtml = ob_get_clean();
 
     // ── ④ Flags helper closure ────────────────────────────────────────────
-    $buildFlagGroup = static function (array $list, string $label, string $color, string $bgClass) use ($flags): string {
+    $buildFlagGroup = static function (array $list, string $label, string $color, string $bgClass): string {
         if (empty($list)) return '';
         ob_start(); ?>
         <div class="space-y-2">
@@ -348,19 +370,30 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
             <?php foreach ($list as $f): ?>
                 <div class="p-3 rounded-lg border border-[#1e3e68] <?= $bgClass ?> space-y-1.5">
                     <div class="flex items-start justify-between gap-2 flex-wrap">
-                        <span class="text-xs font-semibold text-slate-200 leading-snug">
-                            <?= htmlspecialchars($f['questionText']) ?>
-                        </span>
+                        <div class="space-y-0.5 max-w-xl">
+                            <span class="text-xs font-semibold text-slate-200 leading-snug">
+                                <?= htmlspecialchars($f['questionText']) ?>
+                            </span>
+                            <?php if (!empty($f['owner'])): ?>
+                                <div class="text-[10px] text-slate-400 font-mono">
+                                    Owner: <span class="text-slate-300"><?= htmlspecialchars($f['owner']) ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span class="text-[10px] font-mono font-bold text-[#c9a84c] bg-[#1a3a5c] px-1.5 py-0.5 rounded border border-[#234d7a]">
                                 Q<?= htmlspecialchars($f['questionNumber']) ?>
                             </span>
-                            <?php if ($f['trigger'] !== 'NONE' && !empty($f['trigger'])): ?>
-                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                                      style="background:<?= $color ?>22;color:<?= $color ?>;border:1px solid <?= $color ?>44">
+                            <?php if (!empty($f['trigger']) && $f['trigger'] !== 'NONE'): ?>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase"
+                                    style="background:<?= $color ?>22;color:<?= $color ?>;border-color:<?= $color ?>44">
                                     <?= htmlspecialchars($f['trigger']) ?>
                                 </span>
                             <?php endif; ?>
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase"
+                                style="background:<?= $color ?>33;color:<?= $color ?>;border-color:<?= $color ?>66">
+                                <?= htmlspecialchars($f['statusLight']) ?>
+                            </span>
                         </div>
                     </div>
                     <?php if (!empty($f['reason'])): ?>
@@ -382,16 +415,14 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                 </div>
             <?php endforeach; ?>
         </div>
-        <?php return ob_get_clean();
+    <?php return ob_get_clean();
     };
 
-    $critFlags = array_values(array_filter($flags, fn($f) => $f['severity'] === RPT_CRITICAL));
-    $resFlags  = array_values(array_filter($flags, fn($f) => $f['severity'] === RPT_RESOLVABLE));
-    $intFlags  = array_values(array_filter($flags, fn($f) => $f['severity'] === RPT_INTERNAL));
+    $redFlags   = array_values(array_filter($flags, fn($f) => ($f['statusLight'] ?? '') === 'RED'));
+    $amberFlags = array_values(array_filter($flags, fn($f) => ($f['statusLight'] ?? '') === 'AMBER'));
 
-    $flagsHtml = $buildFlagGroup($critFlags, 'Critical conditions',           RPT_RED,  'bg-red-950/30')
-               . $buildFlagGroup($resFlags,  'Resolvable conditions',         RPT_GOLD, 'bg-amber-950/30')
-               . $buildFlagGroup($intFlags,  'Internal UFC actions required', RPT_BLUE, 'bg-blue-950/30');
+    $flagsHtml = $buildFlagGroup($redFlags,   'RED Flags (Critical Deficiencies)', RPT_RED,  'bg-red-950/30')
+        . $buildFlagGroup($amberFlags, 'AMBER Flags (Warnings & Cautions)', RPT_GOLD, 'bg-amber-950/30');
 
     // ── Assemble ──────────────────────────────────────────────────────────
     $projectName  = htmlspecialchars($assessment['project_name'] ?? $assessment['client_name'] ?? 'Unnamed Project');
@@ -414,7 +445,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
         <div class="bg-[#0d1f3c] border border-[#1e3e68] rounded-xl p-6 sm:p-8 shadow-xl text-center relative overflow-hidden">
             <!-- Ambient glow -->
             <div class="absolute inset-0 pointer-events-none"
-                 style="background:radial-gradient(ellipse at 50% 0%,<?= $vColor ?>14 0%,transparent 68%)"></div>
+                style="background:radial-gradient(ellipse at 50% 0%,<?= $vColor ?>14 0%,transparent 68%)"></div>
 
             <p class="relative text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold mb-3">
                 Final Assessment &middot; UFC Master Framework
@@ -429,10 +460,10 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
             <!-- Overall score -->
             <div class="relative inline-flex flex-col items-center mb-5">
                 <span class="font-serif text-6xl sm:text-7xl font-bold leading-none"
-                      style="color:<?= $vColor ?>"><?= $overallFmt ?>%</span>
+                    style="color:<?= $vColor ?>"><?= $overallFmt ?>%</span>
                 <span class="text-sm text-slate-400 mt-1">weighted overall score (100% scale)</span>
                 <span class="text-sm font-semibold mt-0.5"
-                      style="color:<?= $riskColor ?>"><?= $riskLabel ?></span>
+                    style="color:<?= $riskColor ?>"><?= $riskLabel ?></span>
             </div>
 
             <!-- Verdict badge -->
@@ -455,7 +486,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                 <div>
                     <div class="text-[10px] uppercase tracking-wider text-slate-400">Total Flags</div>
                     <div class="text-lg font-bold"
-                         style="color:<?= $totalFlags > 0 ? RPT_GOLD : RPT_GREEN ?>"><?= $totalFlags ?></div>
+                        style="color:<?= $totalFlags > 0 ? RPT_GOLD : RPT_GREEN ?>"><?= $totalFlags ?></div>
                 </div>
             </div>
         </div>
@@ -502,7 +533,7 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
             <div class="bg-[#0d1f3c] border border-emerald-500/40 rounded-xl p-5 shadow-xl flex items-center gap-3">
                 <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span class="text-sm font-semibold text-emerald-300">
                     No flags or conditions documented — all items cleared.
@@ -514,27 +545,27 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
         <?php if ($showActions): ?>
             <div class="flex flex-wrap items-center gap-3 pt-2">
                 <a href="/ufc_v1/admin/assessment.php?id=<?= $assessmentId ?>"
-                   class="px-6 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
+                    class="px-6 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Assessment Details
                 </a>
                 <a href="/ufc_v1/api/export_pdf.php?id=<?= $assessmentId ?>"
-                   class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-sm font-bold rounded-md shadow-lg transition-all flex items-center gap-2">
+                    class="px-6 py-2.5 bg-[#c9a84c] hover:bg-[#d6b85e] text-[#060f1e] text-sm font-bold rounded-md shadow-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Export as PDF
                 </a>
                 <a href="/ufc_v1/assessment/report.php?id=<?= $assessmentId ?>"
-                   target="_blank"
-                   class="px-5 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
+                    target="_blank"
+                    class="px-5 py-2.5 bg-[#1a3a5c] hover:bg-[#234d7a] text-slate-200 text-sm font-semibold rounded-md border border-[#1e3e68] transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     Printable View
                 </a>
@@ -543,5 +574,5 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
 
     </div>
 
-    <?php return ob_get_clean();
+<?php return ob_get_clean();
 }
