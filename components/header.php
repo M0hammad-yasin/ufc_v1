@@ -87,10 +87,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'tasks.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list-check w-6 mr-3 text-[#c9a84c]"></i> Follow-Up Tasks
                 </a>
-                <a href="/ufc_v1/admin/decline-log.php"
+                <!-- <a href="/ufc_v1/admin/decline-log.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'decline-log.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-ban w-6 mr-3 text-[#c9a84c]"></i> Decline Log
-                </a>
+                </a> -->
                 <a href="/ufc_v1/admin/email-logs.php"
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors font-sans <?= $current_page === 'email-logs.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-envelope-open-text w-6 mr-3 text-[#c9a84c]"></i> Email Logs
@@ -144,10 +144,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'tasks.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-list-check w-6 mr-3 text-[#c9a84c]"></i> Follow-Up Tasks
                 </a>
-                <a href="/ufc_v1/admin/decline-log.php"
+                <!-- <a href="/ufc_v1/admin/decline-log.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'decline-log.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-ban w-6 mr-3 text-[#c9a84c]"></i> Decline Log
-                </a>
+                </a> -->
                 <a href="/ufc_v1/admin/email-logs.php"
                     class="flex items-center px-4 py-3.5 text-sm font-medium rounded-lg transition-colors font-sans <?= $current_page === 'email-logs.php' ? 'text-white bg-[#1a3a5c]' : 'text-slate-300 hover:text-white hover:bg-white/5' ?>">
                     <i class="fa-solid fa-envelope-open-text w-6 mr-3 text-[#c9a84c]"></i> Email Logs
