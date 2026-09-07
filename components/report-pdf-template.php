@@ -136,8 +136,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     box-sizing: border-box;
                 }
 
-                <?php if (!$isWebPreview): ?>
-                body,
+                <?php if (!$isWebPreview): ?>body,
                 .pdf-document-root {
                     font-family: 'Helvetica', 'Arial', sans-serif;
                     font-size: 8.5pt;
@@ -147,8 +146,8 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     margin: 0;
                     padding: 0;
                 }
-                <?php else: ?>
-                .pdf-document-root {
+
+                <?php else: ?>.pdf-document-root {
                     font-family: 'Helvetica', 'Arial', sans-serif;
                     font-size: 8.5pt;
                     line-height: 1.35;
@@ -156,9 +155,8 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     margin: 0;
                     padding: 0;
                 }
-                <?php endif; ?>
 
-                <?php if ($isWebPreview): ?>.pdf-preview-sheet {
+                <?php endif; ?><?php if ($isWebPreview): ?>.pdf-preview-sheet {
                     width: 850px;
                     margin: 0 auto;
                     background: #ffffff;
@@ -593,6 +591,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     color: #c9a84c !important;
                     text-decoration: underline !important;
                 }
+
                 .pdf-evidence-link:hover {
                     color: #ffffff !important;
                 }
@@ -905,21 +904,23 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
-                                <?php 
+                                <?php
                                 $filesToShow = !empty($f['evidenceFiles']) ? $f['evidenceFiles'] : (!empty($f['evidenceFile']) ? [$f['evidenceFile']] : []);
                                 if (!empty($filesToShow)):
                                 ?>
                                     <div style="margin-top: 3pt; font-size: 7pt; color: #94a3b8;">
                                         <strong>Evidence:</strong>
-                                        <?php foreach ($filesToShow as $ef): 
+                                        <?php foreach ($filesToShow as $ef):
                                             $efHref = $absoluteBaseUrl . '/uploads/' . htmlspecialchars($ef['stored_filename']);
                                         ?>
                                             <a href="<?= $efHref ?>"
-                                               target="_blank"
-                                               title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
-                                               class="pdf-evidence-link"
-                                               style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
-                                               <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
+                                                target="_blank"
+                                                title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                                class="pdf-evidence-link"
+                                                style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;">
+                                                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                                </svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
                                             </a>
                                         <?php endforeach; ?>
                                     </div>
@@ -958,21 +959,23 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
-                                <?php 
+                                <?php
                                 $filesToShow = !empty($f['evidenceFiles']) ? $f['evidenceFiles'] : (!empty($f['evidenceFile']) ? [$f['evidenceFile']] : []);
                                 if (!empty($filesToShow)):
                                 ?>
                                     <div style="margin-top: 3pt; font-size: 7pt; color: #94a3b8;">
                                         <strong>Evidence:</strong>
-                                        <?php foreach ($filesToShow as $ef): 
+                                        <?php foreach ($filesToShow as $ef):
                                             $efHref = $absoluteBaseUrl . '/uploads/' . htmlspecialchars($ef['stored_filename']);
                                         ?>
                                             <a href="<?= $efHref ?>"
-                                               target="_blank"
-                                               title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
-                                               class="pdf-evidence-link"
-                                               style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
-                                               <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
+                                                target="_blank"
+                                                title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                                class="pdf-evidence-link"
+                                                style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;">
+                                                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                                </svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
                                             </a>
                                         <?php endforeach; ?>
                                     </div>
@@ -1038,7 +1041,9 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                                 title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
                                                 class="pdf-evidence-link"
                                                 style="color: #c9a84c; text-decoration: underline; font-size: 6.5pt; margin-left: 3pt; display: inline-block; white-space: nowrap;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Document
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;">
+                                                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                                </svg>Document
                                             </a>
                                         <?php endif; ?>
                                     </td>

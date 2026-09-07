@@ -49,8 +49,19 @@ foreach ($evidenceFiles as $ef) {
     $evidenceFilesMap[$ef['question_id']] = $ef;
 }
 
-// Fetch CEO Overrides
-$stmtOverrides = $pdo->prepare("SELECT o.*, u.name as ceo_name, p.phase_number FROM ceo_overrides o JOIN users u ON o.ceo_user_id = u.id JOIN phases p ON o.phase_id = p.id WHERE o.assessment_id = ?");
+// Fetch Unresolved Executive Triggers (STOP and ESCALATE)
+$unresolvedExecutiveTriggers = getUnresolvedExecutiveTriggers($assessmentId);
+
+// Fetch CEO Overrides History
+$stmtOverrides = $pdo->prepare("
+    SELECT o.*, u.name as ceo_name, p.phase_number, p.title as phase_title, q.question_number, q.question_text
+    FROM ceo_overrides o
+    JOIN users u ON o.ceo_user_id = u.id
+    JOIN phases p ON o.phase_id = p.id
+    LEFT JOIN questions q ON o.question_id = q.id
+    WHERE o.assessment_id = ?
+    ORDER BY o.created_at DESC
+");
 $stmtOverrides->execute([$assessmentId]);
 $ceoOverrides = $stmtOverrides->fetchAll();
 
@@ -482,7 +493,7 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
     <div id="tab-content-audit" class="view-tab-pane space-y-6 hidden">
         <!-- CEO Overrides & Review Panel (For CEO or Admin) -->
         <?php if (isCeo() || isAdmin()): ?>
-            <div class="bg-[#0d1f3c] border-2 border-purple-600/60 rounded-xl p-6 shadow-xl space-y-4">
+            <div class="bg-[#0d1f3c] border-2 border-purple-600/60 rounded-xl p-6 shadow-xl space-y-5">
                 <div class="flex items-center justify-between pb-3 border-b border-[#1e3e68]">
                     <div class="flex items-center gap-2">
                         <span class="px-2.5 py-0.5 rounded bg-purple-900 text-purple-200 text-xs font-bold uppercase">Executive Panel</span>
@@ -492,57 +503,130 @@ if ($status === 'ESCALATED') $badgeClass = 'bg-purple-950 text-purple-300 border
                 </div>
 
                 <p class="text-xs text-slate-300">
-                    The Chief Executive Officer may override a STOP trigger or clear an ESCALATION trigger. Written justification is recorded permanently in the audit log.
+                    The Chief Executive Officer may override an active STOP trigger or clear an ESCALATION trigger. Each action is tied directly to the originating trigger question, requires mandatory written justification, and is recorded permanently in the audit history. Overriding or clearing a trigger does not automatically pass the phase; all remaining phase gate criteria continue to apply.
                 </p>
 
-                <form action="<?= BASE_URL ?>/admin/ceo-override.php" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                    <input type="hidden" name="assessment_id" value="<?= $assessmentId ?>">
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Target Phase</label>
-                        <select name="phase_id" class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 focus:border-[#c9a84c]">
-                            <?php foreach ($phases as $p): ?>
-                                <option value="<?= $p['id'] ?>">Phase <?= $p['phase_number'] ?> (<?= htmlspecialchars($p['title']) ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
+                <!-- Unresolved Triggers Section -->
+                <?php if (empty($unresolvedExecutiveTriggers)): ?>
+                    <div class="p-4 rounded-lg bg-[#060f1e] border border-[#1e3e68] flex items-center gap-3 text-slate-400 text-xs">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                        <span>No executive actions currently require review.</span>
                     </div>
+                <?php else: ?>
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                            Active Triggers Requiring Executive Decision (<?= count($unresolvedExecutiveTriggers) ?>)
+                        </h4>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Trigger Type to Override</label>
-                        <select name="trigger_type" class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 focus:border-[#c9a84c]">
-                            <option value="STOP">STOP Trigger (Override to Pass)</option>
-                            <option value="ESCALATE">ESCALATE Trigger (Clear Flag)</option>
-                        </select>
-                    </div>
-
-                    <div class="sm:col-span-3">
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">
-                            Permanent Written Justification <span class="text-red-400">*</span>
-                        </label>
-                        <textarea name="justification" rows="2" required placeholder="State legal rationale, executive waiver, or mitigation terms..."
-                            class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 focus:border-[#c9a84c]"></textarea>
-                    </div>
-
-                    <div class="sm:col-span-3 text-right">
-                        <button type="submit" class="px-5 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs rounded shadow transition-colors">
-                            Record Executive Override
-                        </button>
-                    </div>
-                </form>
-
-                <?php if (!empty($ceoOverrides)): ?>
-                    <div class="mt-4 pt-4 border-t border-[#1e3e68] space-y-2">
-                        <h4 class="text-xs font-bold text-purple-300 uppercase">Recorded Executive Overrides:</h4>
-                        <?php foreach ($ceoOverrides as $ov): ?>
-                            <div class="p-3 rounded bg-[#060f1e] border border-purple-800/50 text-xs">
-                                <div class="flex items-center justify-between text-slate-400 mb-1">
-                                    <span class="font-bold text-purple-300">Phase <?= $ov['phase_number'] ?> &middot; <?= $ov['trigger_type'] ?> Override</span>
-                                    <span><?= formatDate($ov['created_at'], 'M j, Y H:i') ?> by <?= htmlspecialchars($ov['ceo_name']) ?></span>
+                        <?php foreach ($unresolvedExecutiveTriggers as $trig): 
+                            $isStop = ($trig['trigger_fired'] === 'STOP');
+                            $cardBorder = $isStop ? 'border-red-600/60 bg-red-950/20' : 'border-amber-600/60 bg-amber-950/20';
+                            $badgeColor = $isStop ? 'bg-red-900 text-red-200 border-red-700' : 'bg-amber-900 text-amber-200 border-amber-700';
+                            $btnColor   = $isStop ? 'bg-red-700 hover:bg-red-600' : 'bg-amber-600 hover:bg-amber-500 text-slate-950';
+                            $btnLabel   = $isStop ? 'Record STOP Override' : 'Clear Escalation';
+                        ?>
+                            <div class="p-4 rounded-lg border <?= $cardBorder ?> space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase border <?= $badgeColor ?>">
+                                            <?= $isStop ? 'STOP TRIGGER' : 'ESCALATE TRIGGER' ?>
+                                        </span>
+                                        <span class="text-xs font-bold text-slate-200">
+                                            Phase <?= (int)$trig['phase_number'] ?> &middot; Question <?= htmlspecialchars($trig['question_number']) ?>
+                                        </span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-400">
+                                        <?= htmlspecialchars($trig['phase_title']) ?>
+                                    </span>
                                 </div>
-                                <p class="text-slate-200 italic">"<?= htmlspecialchars($ov['justification']) ?>"</p>
+
+                                <div class="text-xs text-slate-200 font-medium">
+                                    <?= htmlspecialchars($trig['question_text']) ?>
+                                </div>
+
+                                <div class="p-2.5 rounded bg-[#060f1e]/80 border border-[#1e3e68] text-xs space-y-1">
+                                    <div class="text-slate-300">
+                                        <span class="text-slate-400 font-semibold">Answer Given:</span> 
+                                        <span class="font-bold text-white"><?= htmlspecialchars($trig['answer_value'] ?? 'N/A') ?></span>
+                                    </div>
+                                    <?php if (!empty($trig['explain_reason'])): ?>
+                                        <div class="text-slate-300">
+                                            <span class="text-slate-400 font-semibold">Assessor Note:</span> 
+                                            <span class="italic text-slate-200">"<?= htmlspecialchars($trig['explain_reason']) ?>"</span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($trig['client_message'])): ?>
+                                        <div class="text-[11px] text-slate-400">
+                                            <span class="font-semibold text-slate-400">Trigger Rule:</span> 
+                                            <?= htmlspecialchars($trig['client_message']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <form action="<?= BASE_URL ?>/admin/ceo-override.php" method="POST" class="pt-1 space-y-2">
+                                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                    <input type="hidden" name="assessment_id" value="<?= $assessmentId ?>">
+                                    <input type="hidden" name="question_id" value="<?= (int)$trig['question_id'] ?>">
+
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-300 mb-1">
+                                            Permanent Written Justification <span class="text-red-400">*</span>
+                                        </label>
+                                        <textarea name="justification" rows="2" required 
+                                            placeholder="<?= $isStop ? 'State executive waiver, board approval, or acceptable mitigation terms...' : 'State legal clearance, counsel review outcome, or dispute resolution rationale...' ?>"
+                                            class="w-full px-3 py-2 bg-[#060f1e] border border-[#1e3e68] rounded text-xs text-slate-100 placeholder-slate-500 focus:border-[#c9a84c] focus:outline-none"></textarea>
+                                    </div>
+
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] text-slate-400 italic">
+                                            <?= $isStop ? 'Override allows phase to proceed past STOP; remaining gate metrics still apply.' : 'Clearing escalation removes hold; remaining gate metrics still apply.' ?>
+                                        </span>
+                                        <button type="submit" class="px-4 py-2 font-bold text-xs rounded shadow transition-colors text-white <?= $btnColor ?>">
+                                            <?= $btnLabel ?>
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Override History Section -->
+                <?php if (!empty($ceoOverrides)): ?>
+                    <div class="mt-6 pt-4 border-t border-[#1e3e68] space-y-2">
+                        <h4 class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Recorded Executive Overrides &amp; Clearances
+                        </h4>
+                        <div class="space-y-2">
+                            <?php foreach ($ceoOverrides as $ov): 
+                                $isStopOv = ($ov['trigger_type'] === 'STOP');
+                                $ovBadge = $isStopOv ? 'text-red-300 bg-red-950/60 border-red-800/60' : 'text-amber-300 bg-amber-950/60 border-amber-800/60';
+                                $ovLabel = ($ov['trigger_type'] === 'ESCALATE') ? 'Escalation Cleared' : 'STOP Overridden';
+                            ?>
+                                <div class="p-3 rounded bg-[#060f1e] border border-purple-800/50 text-xs space-y-1">
+                                    <div class="flex flex-wrap items-center justify-between text-slate-400 gap-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border <?= $ovBadge ?>">
+                                                <?= $ov['trigger_type'] ?>
+                                            </span>
+                                            <span class="font-bold text-purple-300">
+                                                Phase <?= (int)$ov['phase_number'] ?><?= !empty($ov['question_number']) ? ' &middot; Question ' . htmlspecialchars($ov['question_number']) : '' ?> &middot; <?= $ovLabel ?>
+                                            </span>
+                                        </div>
+                                        <span class="text-[11px] text-slate-400">
+                                            <?= formatDate($ov['created_at'], 'M j, Y H:i') ?> by <strong class="text-slate-200"><?= htmlspecialchars($ov['ceo_name']) ?></strong>
+                                        </span>
+                                    </div>
+                                    <?php if (!empty($ov['question_text'])): ?>
+                                        <div class="text-[11px] text-slate-400 truncate">
+                                            <?= htmlspecialchars($ov['question_text']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <p class="text-slate-200 italic pt-0.5">"<?= htmlspecialchars($ov['justification']) ?>"</p>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 <?php endif; ?>
             </div>

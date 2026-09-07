@@ -416,23 +416,31 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
         }
 
         if ($ans['trigger_fired'] === 'STOP') {
-            $stopCount++;
+            if (!checkCeoOverride($assessmentId, (int)$phase['id'], 'STOP', (int)$q['id'])) {
+                $stopCount++;
+            }
         } elseif ($ans['trigger_fired'] === 'ESCALATE') {
-            $escalateCount++;
+            if (!checkCeoOverride($assessmentId, (int)$phase['id'], 'ESCALATE', (int)$q['id'])) {
+                $escalateCount++;
+            }
         }
     }
 
     $scorePercent = ($totalScorePossible > 0) ? round(($totalScoreEarned / $totalScorePossible) * 100, 2) : 100.00;
 
-    // Check CEO Overrides
-    $hasStopOverride = checkCeoOverride($assessmentId, (int)$phase['id'], 'STOP');
-    $hasEscalateOverride = checkCeoOverride($assessmentId, (int)$phase['id'], 'ESCALATE');
-
-    if ($hasStopOverride) {
+    // Check for legacy phase-level CEO Overrides (where question_id was NULL)
+    if ($stopCount > 0 && checkCeoOverride($assessmentId, (int)$phase['id'], 'STOP', null)) {
         $stopCount = 0;
     }
-    if ($hasEscalateOverride) {
+    if ($escalateCount > 0 && checkCeoOverride($assessmentId, (int)$phase['id'], 'ESCALATE', null)) {
         $escalateCount = 0;
+    }
+
+    // Use the DB-configured threshold for this phase (default to 65.0% if not set)
+    $phaseThreshold = isset($phase['threshold']) ? (float)$phase['threshold'] : 65.00;
+    // If threshold was stored in 0-10 format (e.g. 6.50), normalize it to 0-100% format (e.g. 65.00%)
+    if ($phaseThreshold <= 10.0 && $phaseThreshold > 0) {
+        $phaseThreshold = $phaseThreshold * 10.0;
     }
 
     $gateResult = 'FAIL_HOLD';
@@ -448,12 +456,6 @@ function evaluatePhaseGate(int $assessmentId, int $phaseNumber, ?string $assesso
         $gateResult = 'ESCALATED';
         $verdictMessage = "Phase {$phaseNumber} raised an ESCALATION trigger and is routed to CEO/Counsel.";
     } else {
-        // Use the DB-configured threshold for this phase (default to 65.0% if not set)
-        $phaseThreshold = isset($phase['threshold']) ? (float)$phase['threshold'] : 65.00;
-        // If threshold was stored in 0-10 format (e.g. 6.50), normalize it to 0-100% format (e.g. 65.00%)
-        if ($phaseThreshold <= 10.0 && $phaseThreshold > 0) {
-            $phaseThreshold = $phaseThreshold * 10.0;
-        }
 
         // Evaluate specific Phase Gates using 100% based DB threshold
         switch ($phaseNumber) {
@@ -621,11 +623,64 @@ function updateAssessmentOverallStatus(int $assessmentId, int $phaseNumber, stri
     }
 }
 
-function checkCeoOverride(int $assessmentId, int $phaseId, string $triggerType): bool {
+function checkCeoOverride(int $assessmentId, int $phaseId, string $triggerType, ?int $questionId = null): bool {
     $pdo = getDbConnection();
+    if ($questionId !== null) {
+        $stmt = $pdo->prepare("
+            SELECT id FROM `ceo_overrides` 
+            WHERE `assessment_id` = ? 
+              AND `trigger_type` = ? 
+              AND (`question_id` = ? OR (`question_id` IS NULL AND `phase_id` = ?))
+            LIMIT 1
+        ");
+        $stmt->execute([$assessmentId, $triggerType, $questionId, $phaseId]);
+        return (bool)$stmt->fetch();
+    }
     $stmt = $pdo->prepare("SELECT id FROM `ceo_overrides` WHERE `assessment_id` = ? AND `phase_id` = ? AND `trigger_type` = ? LIMIT 1");
     $stmt->execute([$assessmentId, $phaseId, $triggerType]);
     return (bool)$stmt->fetch();
+}
+
+/**
+ * Fetches real, currently unresolved executive-level triggers (STOP and ESCALATE)
+ * for an assessment that have not yet been overridden or cleared by the CEO.
+ *
+ * @param int $assessmentId
+ * @return array
+ */
+function getUnresolvedExecutiveTriggers(int $assessmentId): array {
+    $pdo = getDbConnection();
+    $stmt = $pdo->prepare("
+        SELECT 
+            aa.question_id,
+            aa.trigger_fired,
+            aa.answer_value,
+            aa.status_light,
+            q.question_number,
+            q.question_text,
+            q.client_message,
+            p.id AS phase_id,
+            p.phase_number,
+            p.title AS phase_title,
+            eb.reason AS explain_reason,
+            eb.responsible_party,
+            eb.target_cure_date
+        FROM assessment_answers aa
+        JOIN questions q ON aa.question_id = q.id
+        JOIN phases p ON q.phase_id = p.id
+        LEFT JOIN explain_blocks eb ON (eb.assessment_id = aa.assessment_id AND eb.question_id = aa.question_id)
+        WHERE aa.assessment_id = ?
+          AND aa.trigger_fired IN ('STOP', 'ESCALATE')
+          AND NOT EXISTS (
+              SELECT 1 FROM ceo_overrides co
+              WHERE co.assessment_id = aa.assessment_id
+                AND co.trigger_type = aa.trigger_fired
+                AND (co.question_id = aa.question_id OR (co.question_id IS NULL AND co.phase_id = p.id))
+          )
+        ORDER BY p.phase_number ASC, q.order_index ASC
+    ");
+    $stmt->execute([$assessmentId]);
+    return $stmt->fetchAll();
 }
 
 function isPhaseUnlocked(int $assessmentId, int $phaseNumber): bool {
