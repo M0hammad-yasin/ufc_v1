@@ -98,6 +98,26 @@ function getAssessmentReportData(int $assessmentId): array
         $explains[$row['question_number']] = $row;
     }
 
+    // ── Evidence files keyed by question_id ───────────────────────────────
+    $filesStmt = $pdo->prepare("
+        SELECT f.*, q.question_number
+        FROM   `evidence_files` f
+        JOIN   `questions`      q  ON f.question_id = q.id
+        WHERE  f.assessment_id = ?
+        ORDER  BY f.created_at DESC
+    ");
+    $filesStmt->execute([$assessmentId]);
+    $evidenceFiles = $filesStmt->fetchAll(PDO::FETCH_ASSOC);
+    $evidenceFilesMap = [];
+    $evidenceFilesByQuestionId = [];
+    foreach ($evidenceFiles as $ef) {
+        $qId = (int)$ef['question_id'];
+        if (!isset($evidenceFilesMap[$qId])) {
+            $evidenceFilesMap[$qId] = $ef;
+        }
+        $evidenceFilesByQuestionId[$qId][] = $ef;
+    }
+
     // ── Build normalised phaseResults + weighted score ────────────────────
     $phaseResults  = [];
     $weightedSum   = 0.0;
@@ -180,6 +200,7 @@ function getAssessmentReportData(int $assessmentId): array
 
         $flags[] = [
             'phaseId'          => (int)$ans['phase_id'],
+            'questionId'       => (int)$ans['question_id'],
             'questionNumber'   => $qNum,
             'questionText'     => $ans['question_text'],
             'trigger'          => $trigger,
@@ -189,15 +210,18 @@ function getAssessmentReportData(int $assessmentId): array
             'reason'           => $explain['reason']            ?? null,
             'responsibleParty' => $explain['responsible_party'] ?? null,
             'targetCureDate'   => $explain['target_cure_date']  ?? null,
+            'evidenceFile'     => $evidenceFilesMap[(int)$ans['question_id']] ?? null,
+            'evidenceFiles'    => $evidenceFilesByQuestionId[(int)$ans['question_id']] ?? [],
         ];
     }
 
     return [
-        'assessment'   => $assessment,
-        'phaseResults' => $phaseResults,
-        'flags'        => $flags,
-        'overallScore' => $overallScore,
-        'verdict'      => $verdict,
+        'assessment'       => $assessment,
+        'phaseResults'     => $phaseResults,
+        'flags'            => $flags,
+        'overallScore'     => $overallScore,
+        'verdict'          => $verdict,
+        'evidenceFilesMap' => $evidenceFilesMap,
     ];
 }
 
@@ -410,6 +434,23 @@ function renderReportBody(int $assessmentId, bool $showActions = true): string
                             <?php if (!empty($f['targetCureDate'])): ?>
                                 <span>Cure by: <strong class="text-slate-400"><?= htmlspecialchars(date('M j, Y', strtotime($f['targetCureDate']))) ?></strong></span>
                             <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php 
+                    $filesToShow = !empty($f['evidenceFiles']) ? $f['evidenceFiles'] : (!empty($f['evidenceFile']) ? [$f['evidenceFile']] : []);
+                    if (!empty($filesToShow)):
+                    ?>
+                        <div class="pt-1 text-[11px] text-slate-400 flex flex-wrap items-center gap-2">
+                            <span class="font-semibold text-slate-300">Evidence:</span>
+                            <?php foreach ($filesToShow as $ef): ?>
+                                <a href="<?= BASE_URL ?>/uploads/<?= htmlspecialchars($ef['stored_filename']) ?>"
+                                    target="_blank"
+                                    title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                    class="text-[#c9a84c] hover:text-white inline-flex items-center gap-1 font-medium underline">
+                                    <i class="fa-solid fa-paperclip text-xs"></i>
+                                    <span><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?></span>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>

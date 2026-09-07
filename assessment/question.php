@@ -349,8 +349,11 @@ require_once __DIR__ . '/../components/phase-nav.php';
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
                         4. Supporting Evidence / Document (PDF, DWG, Image, Word)
                     </label>
-                    <input type="file" name="evidence_file"
+                    <input type="file" id="evidence_file" name="evidence_file"
                         class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#1a3a5c] file:text-slate-200 hover:file:bg-[#234d7a]">
+                    <p class="mt-1 text-[11px] text-slate-400 italic">
+                        Note: Maximum allowed file size is <strong>20 MB</strong>. Supported formats: PDF, DWG, JPG, PNG, WEBP, DOC, DOCX.
+                    </p>
 
                     <?php if (!empty($evidenceFiles)): ?>
                         <div class="mt-2 text-xs text-emerald-400 flex items-center gap-2">
@@ -574,6 +577,20 @@ require_once __DIR__ . '/../components/phase-nav.php';
                 e.preventDefault();
                 alert("Please provide the required one-line justification for marking Not Applicable.");
                 naInput.focus();
+                return false;
+            }
+        }
+
+        // Instant Client-Side File Size Check (20 MB limit)
+        const fileInput = document.getElementById('evidence_file');
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            const maxBytes = 20 * 1024 * 1024; // 20 MB
+            const uploadedFile = fileInput.files[0];
+            if (uploadedFile.size > maxBytes) {
+                e.preventDefault();
+                const fileSizeMB = (uploadedFile.size / (1024 * 1024)).toFixed(2);
+                alert("File Upload Error: Selected file (" + fileSizeMB + " MB) exceeds the maximum allowed size of 20 MB.");
+                fileInput.focus();
                 return false;
             }
         }

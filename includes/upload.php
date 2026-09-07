@@ -14,7 +14,7 @@ require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/questions.php';
 
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');
-define('MAX_FILE_SIZE_BYTES', 25 * 1024 * 1024); // 25 MB
+define('MAX_FILE_SIZE_BYTES', 20 * 1024 * 1024); // 20 MB
 
 $allowedMimeTypes = [
     'application/pdf',
@@ -39,11 +39,14 @@ function handleEvidenceUpload(int $assessmentId, int $questionId, ?int $explainB
     }
 
     if ($fileArray['error'] !== UPLOAD_ERR_OK) {
-        return ['success' => false, 'error' => 'File upload error code: ' . $fileArray['error']];
+        if ($fileArray['error'] === UPLOAD_ERR_INI_SIZE || $fileArray['error'] === UPLOAD_ERR_FORM_SIZE) {
+            return ['success' => false, 'error' => 'File size exceeds server maximum upload limit. Allowed limit is 20 MB.'];
+        }
+        return ['success' => false, 'error' => 'File upload failed with server error code: ' . $fileArray['error']];
     }
 
     if ($fileArray['size'] > MAX_FILE_SIZE_BYTES) {
-        return ['success' => false, 'error' => 'File exceeds the 25MB maximum limit.'];
+        return ['success' => false, 'error' => 'File size exceeds the 20 MB maximum limit.'];
     }
 
     $originalName = basename($fileArray['name']);

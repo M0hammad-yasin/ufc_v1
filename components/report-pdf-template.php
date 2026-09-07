@@ -25,6 +25,8 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
     $flags        = $data['flags'];
     $overallScore = (float)$data['overallScore'];
     $verdict      = $data['verdict'];
+    $evidenceFilesMap = $data['evidenceFilesMap'] ?? [];
+    $absoluteBaseUrl  = function_exists('getAppBaseUrl') ? getAppBaseUrl() : (defined('BASE_URL') ? BASE_URL : '');
 
     // Load full itemized questions for each phase
     $stmtQs = $pdo->prepare("
@@ -582,6 +584,14 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                     border: 0.5pt solid #d97706;
                 }
 
+                .pdf-evidence-link {
+                    color: #c9a84c !important;
+                    text-decoration: underline !important;
+                }
+                .pdf-evidence-link:hover {
+                    color: #ffffff !important;
+                }
+
                 /* Itemized Table */
                 .data-table {
                     width: 100%;
@@ -890,6 +900,25 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
+                                <?php 
+                                $filesToShow = !empty($f['evidenceFiles']) ? $f['evidenceFiles'] : (!empty($f['evidenceFile']) ? [$f['evidenceFile']] : []);
+                                if (!empty($filesToShow)):
+                                ?>
+                                    <div style="margin-top: 3pt; font-size: 7pt; color: #94a3b8;">
+                                        <strong>Evidence:</strong>
+                                        <?php foreach ($filesToShow as $ef): 
+                                            $efHref = $absoluteBaseUrl . '/uploads/' . htmlspecialchars($ef['stored_filename']);
+                                        ?>
+                                            <a href="<?= $efHref ?>"
+                                               target="_blank"
+                                               title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                               class="pdf-evidence-link"
+                                               style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
+                                               <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -922,6 +951,25 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                         <?php if (!empty($f['targetCureDate'])): ?>
                                             Target Cure Date: <strong style="color: #e2e8f0;"><?= DateService::format($f['targetCureDate'], 'M j, Y') ?></strong>
                                         <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                                <?php 
+                                $filesToShow = !empty($f['evidenceFiles']) ? $f['evidenceFiles'] : (!empty($f['evidenceFile']) ? [$f['evidenceFile']] : []);
+                                if (!empty($filesToShow)):
+                                ?>
+                                    <div style="margin-top: 3pt; font-size: 7pt; color: #94a3b8;">
+                                        <strong>Evidence:</strong>
+                                        <?php foreach ($filesToShow as $ef): 
+                                            $efHref = $absoluteBaseUrl . '/uploads/' . htmlspecialchars($ef['stored_filename']);
+                                        ?>
+                                            <a href="<?= $efHref ?>"
+                                               target="_blank"
+                                               title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                               class="pdf-evidence-link"
+                                               style="color: #c9a84c; text-decoration: underline; font-weight: bold; margin-left: 3pt; display: inline-block;">
+                                               <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><?= htmlspecialchars($ef['original_name'] ?: 'Document') ?>
+                                            </a>
+                                        <?php endforeach; ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -974,7 +1022,21 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
                                     <td><strong style="color: #c9a84c;"><?= $q['question_number'] ?></strong></td>
                                     <td style="color: #f1f5f9;"><?= htmlspecialchars($q['question_text']) ?></td>
                                     <td style="color: #94a3b8;"><?= $q['owner'] ?></td>
-                                    <td><?= htmlspecialchars($ansDisplay) ?></td>
+                                    <td>
+                                        <span><?= htmlspecialchars($ansDisplay) ?></span>
+                                        <?php if (isset($evidenceFilesMap[$q['id']])):
+                                            $ef = $evidenceFilesMap[$q['id']];
+                                            $efHref = $absoluteBaseUrl . '/uploads/' . htmlspecialchars($ef['stored_filename']);
+                                        ?>
+                                            <a href="<?= $efHref ?>"
+                                                target="_blank"
+                                                title="View Evidence Document: <?= htmlspecialchars($ef['original_name']) ?>"
+                                                class="pdf-evidence-link"
+                                                style="color: #c9a84c; text-decoration: underline; font-size: 6.5pt; margin-left: 3pt; display: inline-block; white-space: nowrap;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; display: inline-block; margin-right: 1px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Document
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><span class="<?= $lightClass ?>"><?= $light ?></span></td>
                                     <td style="text-align: right; color: #ffffff;"><?= isset($q['score']) ? number_format((float)$q['score'], 0) : '—' ?>/10</td>
                                 </tr>
