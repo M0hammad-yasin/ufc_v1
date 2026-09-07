@@ -230,12 +230,7 @@ class EmailService
      */
     public static function sendSlaReminderEmail(array $assessment, int $daysElapsed): bool
     {
-        $assessorEmail = !empty($assessment['assessor_email']) ? $assessment['assessor_email'] : null;
-        if (empty($assessorEmail)) {
-            // Fallback to admin
-            $assessorEmail = 'admin@unitedfiveconstruction.com';
-        }
-
+        $assessorEmail = 'alib@unitedfiveconstruct.com';
         $assessmentId = (int)$assessment['id'];
         $assessmentNo = htmlspecialchars($assessment['assessment_number'] ?? ('UFC-' . $assessmentId));
         $clientName   = htmlspecialchars($assessment['client_name'] ?? 'Client');
