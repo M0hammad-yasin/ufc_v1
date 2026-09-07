@@ -184,7 +184,7 @@ try {
             'trigger' => 'HOLD',
             'msg' => 'The open objections have not been resolved. Until your design professional responds and the examiner accepts, the permitted scope is not fixed and cannot be priced firmly.',
             'evidence' => 'The architect\'s written objection responses as submitted, and the DOB NOW status showing acceptance or a scheduled re-review.',
-            'condition' => '{"question_number":"1.4","operator":"==","value":"NO"}',
+            'condition' => '{"and":[{"question_number":"1.4","operator":"==","value":"NO"},{"question_number":"1.1","operator":"!=","value":"NOT_STARTED"}]}',
             'order' => 5,
             'options' => []
         ],

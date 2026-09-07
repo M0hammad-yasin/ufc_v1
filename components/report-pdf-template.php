@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/DateService.php';
+require_once __DIR__ . '/../includes/questions.php';
 require_once __DIR__ . '/../components/report-body.php';
 
 function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false): string
@@ -28,7 +29,7 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
     $evidenceFilesMap = $data['evidenceFilesMap'] ?? [];
     $absoluteBaseUrl  = function_exists('getAppBaseUrl') ? getAppBaseUrl() : (defined('BASE_URL') ? BASE_URL : '');
 
-    // Load full itemized questions for each phase
+    // Load full itemized questions for each phase (only applicable questions)
     $stmtQs = $pdo->prepare("
         SELECT q.*, aa.answer_value, aa.score, aa.points_possible, aa.status_light, aa.trigger_fired, aa.is_applicable
         FROM `questions` q
@@ -38,8 +39,12 @@ function generateAssessmentPdfHtml(int $assessmentId, bool $isWebPreview = false
     $stmtQs->execute([$assessmentId]);
     $allQuestions = $stmtQs->fetchAll(PDO::FETCH_ASSOC);
 
+    $answersMap = function_exists('getAssessmentAnswersMap') ? getAssessmentAnswersMap($assessmentId) : [];
     $questionsByPhase = [];
     foreach ($allQuestions as $q) {
+        if (function_exists('isQuestionApplicable') && !isQuestionApplicable($assessmentId, $q, $answersMap)) {
+            continue;
+        }
         $questionsByPhase[(int)$q['phase_id']][] = $q;
     }
 

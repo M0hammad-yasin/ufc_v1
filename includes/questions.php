@@ -96,42 +96,89 @@ function isQuestionApplicable(int $assessmentId, array $question, ?array $answer
 }
 
 function evaluateConditionNode(array $condition, array $answersMap): bool {
-    $targetQNum = $condition['question_number'] ?? null;
-    if (!$targetQNum) {
+    // 1. If condition is an indexed array of conditions (all must match)
+    $isList = function_exists('array_is_list') ? array_is_list($condition) : (array_keys($condition) === range(0, count($condition) - 1));
+    if ($isList) {
+        foreach ($condition as $subCond) {
+            if (is_array($subCond) && !evaluateConditionNode($subCond, $answersMap)) {
+                return false;
+            }
+        }
         return true;
     }
 
-    $targetAnswer = $answersMap[$targetQNum]['answer_value'] ?? null;
-    $op = strtoupper($condition['operator'] ?? '==');
-
-    $isMatch = false;
-    switch ($op) {
-        case '==':
-        case '=':
-            $isMatch = ($targetAnswer === $condition['value']);
-            break;
-        case '!=':
-            $isMatch = ($targetAnswer !== null && $targetAnswer !== $condition['value']);
-            break;
-        case 'IN':
-            $values = $condition['values'] ?? [];
-            $isMatch = in_array($targetAnswer, $values, true);
-            break;
-        case 'NOT_IN':
-            $values = $condition['values'] ?? [];
-            $isMatch = ($targetAnswer !== null && !in_array($targetAnswer, $values, true));
-            break;
-        default:
-            $isMatch = true;
+    // 2. Handle nested or top-level 'and' condition group
+    if (isset($condition['and'])) {
+        $andList = is_array($condition['and']) ? $condition['and'] : [];
+        $isAndList = function_exists('array_is_list') ? array_is_list($andList) : (array_keys($andList) === range(0, count($andList) - 1));
+        $andItems = $isAndList ? $andList : [$andList];
+        foreach ($andItems as $subCond) {
+            if (is_array($subCond) && !evaluateConditionNode($subCond, $answersMap)) {
+                return false;
+            }
+        }
     }
 
-    if (!$isMatch) {
-        return false;
+    // 3. Handle nested or top-level 'or' condition group (at least one must match)
+    if (isset($condition['or'])) {
+        $orList = is_array($condition['or']) ? $condition['or'] : [];
+        $isOrList = function_exists('array_is_list') ? array_is_list($orList) : (array_keys($orList) === range(0, count($orList) - 1));
+        $orItems = $isOrList ? $orList : [$orList];
+        $orMatched = false;
+        foreach ($orItems as $subCond) {
+            if (is_array($subCond) && evaluateConditionNode($subCond, $answersMap)) {
+                $orMatched = true;
+                break;
+            }
+        }
+        if (!$orMatched) {
+            return false;
+        }
     }
 
-    // Nested 'and' conditions
-    if (!empty($condition['and']) && is_array($condition['and'])) {
-        return evaluateConditionNode($condition['and'], $answersMap);
+    // 4. Handle direct single question condition
+    if (isset($condition['question_number'])) {
+        $targetQNum = $condition['question_number'];
+        $targetAnswer = $answersMap[$targetQNum]['answer_value'] ?? null;
+        $op = strtoupper($condition['operator'] ?? '==');
+
+        $isMatch = false;
+        switch ($op) {
+            case '==':
+            case '=':
+                $isMatch = ($targetAnswer === $condition['value']);
+                break;
+            case '!=':
+            case '<>':
+                $isMatch = ($targetAnswer !== null && $targetAnswer !== $condition['value']);
+                break;
+            case 'IN':
+                $values = $condition['values'] ?? [];
+                $isMatch = in_array($targetAnswer, $values, true);
+                break;
+            case 'NOT_IN':
+                $values = $condition['values'] ?? [];
+                $isMatch = ($targetAnswer !== null && !in_array($targetAnswer, $values, true));
+                break;
+            case '>':
+                $isMatch = ($targetAnswer !== null && (float)$targetAnswer > (float)$condition['value']);
+                break;
+            case '>=':
+                $isMatch = ($targetAnswer !== null && (float)$targetAnswer >= (float)$condition['value']);
+                break;
+            case '<':
+                $isMatch = ($targetAnswer !== null && (float)$targetAnswer < (float)$condition['value']);
+                break;
+            case '<=':
+                $isMatch = ($targetAnswer !== null && (float)$targetAnswer <= (float)$condition['value']);
+                break;
+            default:
+                $isMatch = true;
+        }
+
+        if (!$isMatch) {
+            return false;
+        }
     }
 
     return true;

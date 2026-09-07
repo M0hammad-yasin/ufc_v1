@@ -30,6 +30,34 @@ function formatDate(?string $dateStr, string $format = 'M j, Y'): string
     }
 }
 
+/**
+ * Returns the full absolute base URL including scheme (http/https) and host.
+ * E.g.:
+ *   Localhost:  http://localhost/ufc_v1
+ *   Production: https://pre-assessments.unitedfiveconstruct.com
+ */
+function getAppBaseUrl(): string
+{
+    $envBase = getenv('APP_BASE_URL');
+    if ($envBase !== false && $envBase !== '') {
+        $base = rtrim($envBase, '/');
+        if (preg_match('#^https?://#i', $base)) {
+            return $base;
+        }
+    }
+
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+
+    $scheme = $isHttps ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $isLocal = (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false);
+    $path = $isLocal ? '/ufc_v1' : '';
+
+    return rtrim($scheme . $host . $path, '/');
+}
+
 function setFlashMessage(string $type, string $message): void
 {
     if (session_status() === PHP_SESSION_NONE) {
