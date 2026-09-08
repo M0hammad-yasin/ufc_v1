@@ -216,8 +216,8 @@ function getAssessmentSlaStatus(array $assessment, ?PDO $pdo = null): array
             'days_elapsed'    => $daysElapsed,
             'days_remaining'  => $daysRemaining,
             'label'           => "Week 1 ({$dayLabel}) · {$daysRemaining}d left",
-            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/80 shadow-md animate-pulse"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span></span> Week 1 (' . $daysRemaining . 'd left)</span>',
-            'dot_html'        => '<span class="relative inline-flex h-3 w-3 align-middle mr-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.9)]" title="Timer Active (Week 1)"></span></span>',
+            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/80 shadow-md animate-pulse"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span></span> ' . $daysRemaining . 'd left</span>',
+            'dot_html'        => '<span class="relative inline-flex h-3 w-3 align-middle mr-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.9)]"></span></span>',
         ];
     } else {
         // Week 2 and beyond (Days 8 to 14+): Red blinking urgent notification
@@ -228,8 +228,8 @@ function getAssessmentSlaStatus(array $assessment, ?PDO $pdo = null): array
             'days_elapsed'    => $daysElapsed,
             'days_remaining'  => $daysRemaining,
             'label'           => "Week 2 Escalation{$overdueText}",
-            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold bg-red-950/95 text-red-200 border border-red-500 shadow-md animate-pulse"><span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-90"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span></span> Week 2 Urgent' . $overdueText . '</span>',
-            'dot_html'        => '<span class="relative inline-flex h-3 w-3 align-middle mr-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-90"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow-[0_0_10px_rgba(239,68,68,1)]" title="Timer Urgent Escalation (Week 2)"></span></span>',
+            'badge_html'      => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-bold bg-red-950/95 text-red-200 border border-red-500 shadow-md animate-pulse"><span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-90"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span></span> ' . $overdueText . '</span>',
+            'dot_html'        => '<span class="relative inline-flex h-3 w-3 align-middle mr-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-90"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow-[0_0_10px_rgba(239,68,68,1)]"></span></span>',
         ];
     }
 }
