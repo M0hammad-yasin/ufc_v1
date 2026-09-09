@@ -63,15 +63,45 @@ try {
         exit;
     } elseif ($action === 'send_lead_summary') {
         $targetEmail = !empty($recipient) ? $recipient : ($assessment['client_email'] ?? '');
-        $ok = EmailService::sendLeadSummaryEmail($assessmentId, $targetEmail, $customNote);
+        if (empty($targetEmail)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Recipient email address is required']);
+            exit;
+        }
+
+        $phaseChoice    = $body['phase_choice'] ?? ($body['phase_number'] ?? 'all');
+        $includeResults = !isset($body['include_results']) || filter_var($body['include_results'], FILTER_VALIDATE_BOOLEAN);
+        $includeAnswers = !isset($body['include_answers']) || filter_var($body['include_answers'], FILTER_VALIDATE_BOOLEAN);
+
+        $ok = EmailService::sendLeadSummaryEmail(
+            $assessmentId,
+            $targetEmail,
+            $customNote,
+            $phaseChoice,
+            $includeResults,
+            $includeAnswers
+        );
+
+        if (!$ok) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Failed to dispatch email. Please verify mail service settings.']);
+            exit;
+        }
 
         logAudit($assessmentId, 'EMAIL_SENT', [
             'email_type' => 'LEAD_SUMMARY',
             'recipient' => $targetEmail,
+            'phase_choice' => $phaseChoice,
+            'include_results' => $includeResults,
+            'include_answers' => $includeAnswers,
             'sent_by' => $currentUser['name']
         ], (int)$currentUser['id']);
 
-        echo json_encode(['success' => true, 'message' => "Lead summary sent to {$targetEmail}"]);
+        $phaseLabel = ($phaseChoice === 'all') ? 'All Phases (1–4)' : "Phase {$phaseChoice}";
+        echo json_encode([
+            'success' => true, 
+            'message' => "Lead summary report ({$phaseLabel}) successfully sent to {$targetEmail}"
+        ]);
         exit;
     } elseif ($action === 'send_custom') {
         $subject = trim((string)($body['subject'] ?? 'Notification from United Five Construction'));

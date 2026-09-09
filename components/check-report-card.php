@@ -221,14 +221,14 @@ if ($status === 'PROCEED_TO_PROPOSAL') {
                                     </button>
                                 <?php endif; ?>
 
-                                <!-- 5. Send Lead Summary -->
+                                <!-- 5. Send Lead Generation Report -->
                                 <button type="button"
                                     onclick="openEmailModal('send_lead_summary')"
                                     class="w-full text-left px-3.5 py-2.5 text-xs font-semibold text-sky-300 hover:bg-[#122849] flex items-center gap-2.5 transition-colors cursor-pointer">
                                     <i class="fa-solid fa-address-card text-sky-400 text-sm"></i>
                                     <div>
-                                        <div>Send Lead &amp; Contact Data</div>
-                                        <div class="text-[10px] text-slate-400 font-normal">Email lead summary sheet</div>
+                                        <div>Lead Generation &amp; Phase Report</div>
+                                        <div class="text-[10px] text-slate-400 font-normal">Phases 1–4 &middot; Results &amp; Answers</div>
                                     </div>
                                 </button>
 
