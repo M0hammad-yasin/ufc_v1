@@ -24,12 +24,12 @@ function checkProjectExists(PDO $pdo, string $name, ?int $excludeId = null): boo
 
     if ($excludeId !== null) {
         $stmt = $pdo->prepare(
-            "SELECT COUNT(*) FROM assessments WHERE project_name = ? AND id != ?"
+            "SELECT COUNT(*) FROM assessments WHERE project_name = ? AND id != ? AND (is_deleted = 0 OR is_deleted IS NULL)"
         );
         $stmt->execute([$name, $excludeId]);
     } else {
         $stmt = $pdo->prepare(
-            "SELECT COUNT(*) FROM assessments WHERE project_name = ?"
+            "SELECT COUNT(*) FROM assessments WHERE project_name = ? AND (is_deleted = 0 OR is_deleted IS NULL)"
         );
         $stmt->execute([$name]);
     }

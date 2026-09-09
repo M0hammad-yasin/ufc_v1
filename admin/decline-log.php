@@ -29,6 +29,7 @@ $stmt = $pdo->query("
     FROM assessments a
     LEFT JOIN users u ON a.assessor_id = u.id
     WHERE a.status = 'NOT_A_FIT'
+      AND (a.is_deleted = 0 OR a.is_deleted IS NULL)
     ORDER BY a.updated_at DESC
 ");
 $declines = $stmt->fetchAll();

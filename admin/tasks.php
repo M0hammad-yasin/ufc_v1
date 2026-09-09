@@ -62,7 +62,7 @@ $sql = "
     JOIN assessments a ON t.assessment_id = a.id
     JOIN questions   q ON t.question_id   = q.id
     JOIN explain_blocks eb ON t.explain_block_id = eb.id
-    WHERE 1=1
+    WHERE (a.is_deleted = 0 OR a.is_deleted IS NULL)
 ";
 $params = [];
 if (!empty($filterStatus) && $filterStatus !== 'ALL') {
@@ -292,7 +292,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 }
 
 // ── Summary counts ────────────────────────────────────────────────────────────
-$totalStmt = $pdo->query("SELECT status, COUNT(*) as cnt FROM follow_up_tasks GROUP BY status");
+$totalStmt = $pdo->query("
+    SELECT t.status, COUNT(*) as cnt 
+    FROM follow_up_tasks t
+    JOIN assessments a ON t.assessment_id = a.id
+    WHERE (a.is_deleted = 0 OR a.is_deleted IS NULL)
+    GROUP BY t.status
+");
 $totals = ['OPEN' => 0, 'RESOLVED' => 0, 'ALL' => 0];
 while ($row = $totalStmt->fetch()) {
     $totals[$row['status']] = (int)$row['cnt'];

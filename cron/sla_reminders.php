@@ -46,6 +46,7 @@ $stmt = $pdo->query("
     LEFT JOIN users u_created ON a.assessor_id = u_created.id
     WHERE a.phase_1_completed_at IS NOT NULL
       AND a.status NOT IN ('PROCEED_TO_PROPOSAL', 'HOLD', 'NOT_A_FIT', 'ABORTED')
+      AND (a.is_deleted = 0 OR a.is_deleted IS NULL)
 ");
 $assessments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

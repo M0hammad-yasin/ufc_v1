@@ -19,6 +19,7 @@ try {
         WHERE status = 'HOLD' 
           AND hold_deadline_date IS NOT NULL 
           AND hold_deadline_date < CURRENT_DATE()
+          AND (is_deleted = 0 OR is_deleted IS NULL)
     ");
     $stmt->execute();
     $overdueAssessments = $stmt->fetchAll();

@@ -10,27 +10,32 @@ requireLogin();
 $pdo = getDbConnection();
 
 // Total Leads
-$totalLeads = (int)$pdo->query("SELECT COUNT(*) FROM assessments")->fetchColumn();
+$totalLeads = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE (is_deleted = 0 OR is_deleted IS NULL)")->fetchColumn();
 
 // Passed / Proceed to proposal
-$passedCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'PROCEED_TO_PROPOSAL'")->fetchColumn();
+$passedCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'PROCEED_TO_PROPOSAL' AND (is_deleted = 0 OR is_deleted IS NULL)")->fetchColumn();
 
 // Declined / Not a fit
-$declinedCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'NOT_A_FIT'")->fetchColumn();
+$declinedCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'NOT_A_FIT' AND (is_deleted = 0 OR is_deleted IS NULL)")->fetchColumn();
 
 // In progress
-$inProgressCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'IN_PROGRESS'")->fetchColumn();
+$inProgressCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'IN_PROGRESS' AND (is_deleted = 0 OR is_deleted IS NULL)")->fetchColumn();
 
 // Current Active Holds
-$currentHoldCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'HOLD'")->fetchColumn();
+$currentHoldCount = (int)$pdo->query("SELECT COUNT(*) FROM assessments WHERE status = 'HOLD' AND (is_deleted = 0 OR is_deleted IS NULL)")->fetchColumn();
 
 // Total Assessments that were ever on HOLD (from history or current)
 $everOnHoldCount = (int)$pdo->query("
     SELECT COUNT(DISTINCT assessment_id) 
     FROM (
-        SELECT assessment_id FROM phase_results WHERE status = 'FAIL_HOLD'
+        SELECT pr.assessment_id 
+        FROM phase_results pr
+        JOIN assessments a ON pr.assessment_id = a.id
+        WHERE pr.status = 'FAIL_HOLD' AND (a.is_deleted = 0 OR a.is_deleted IS NULL)
         UNION
-        SELECT id AS assessment_id FROM assessments WHERE status = 'HOLD'
+        SELECT id AS assessment_id 
+        FROM assessments 
+        WHERE status = 'HOLD' AND (is_deleted = 0 OR is_deleted IS NULL)
     ) AS h
 ")->fetchColumn();
 
@@ -39,7 +44,9 @@ $holdRecoveredCount = (int)$pdo->query("
     SELECT COUNT(DISTINCT pr.assessment_id) 
     FROM phase_results pr
     JOIN assessments a ON pr.assessment_id = a.id
-    WHERE pr.status = 'FAIL_HOLD' AND a.status = 'PROCEED_TO_PROPOSAL'
+    WHERE pr.status = 'FAIL_HOLD' 
+      AND a.status = 'PROCEED_TO_PROPOSAL'
+      AND (a.is_deleted = 0 OR a.is_deleted IS NULL)
 ")->fetchColumn();
 
 // Rates

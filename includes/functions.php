@@ -126,7 +126,7 @@ function getAssessmentDetails(int $assessmentId): ?array
         FROM assessments a
         LEFT JOIN users u_created ON a.assessor_id = u_created.id
         LEFT JOIN users u_updated ON a.last_updated_by_user_id = u_updated.id
-        WHERE a.id = ?
+        WHERE a.id = ? AND (a.is_deleted = 0 OR a.is_deleted IS NULL)
         LIMIT 1
     ");
     $stmt->execute([$assessmentId]);
