@@ -684,15 +684,37 @@ function getUnresolvedExecutiveTriggers(int $assessmentId): array {
 }
 
 function isPhaseUnlocked(int $assessmentId, int $phaseNumber): bool {
-    if ($phaseNumber === 1) {
+    if ($phaseNumber <= 1) {
         return true;
     }
     $pdo = getDbConnection();
-    $prevPhase = getPhaseByNumber($phaseNumber - 1);
-    if (!$prevPhase) return false;
 
-    $stmt = $pdo->prepare("SELECT status FROM phase_results WHERE assessment_id = ? AND phase_id = ? LIMIT 1");
-    $stmt->execute([$assessmentId, $prevPhase['id']]);
-    $res = $stmt->fetch();
-    return $res && $res['status'] === 'PASS';
+    // Verify all preceding phases (1 through phaseNumber - 1) have 'PASS' status in phase_results
+    $stmt = $pdo->prepare("
+        SELECT p.phase_number, pr.status
+        FROM phases p
+        LEFT JOIN phase_results pr ON (pr.phase_id = p.id AND pr.assessment_id = ?)
+        WHERE p.phase_number < ?
+        ORDER BY p.phase_number ASC
+    ");
+    $stmt->execute([$assessmentId, $phaseNumber]);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($results)) {
+        return false;
+    }
+
+    // Must have all prior phases defined in system
+    if (count($results) < ($phaseNumber - 1)) {
+        return false;
+    }
+
+    // If ANY preceding phase does not have 'PASS' status, lock this phase
+    foreach ($results as $r) {
+        if (($r['status'] ?? '') !== 'PASS') {
+            return false;
+        }
+    }
+
+    return true;
 }
