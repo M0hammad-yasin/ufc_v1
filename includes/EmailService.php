@@ -228,47 +228,255 @@ class EmailService
     /**
      * Sends automated SLA Reminder to Assessor (triggered every 3 days post Phase 1 completion).
      */
-    public static function sendSlaReminderEmail(array $assessment, int $daysElapsed): bool
-    {
-        $assessorEmail = 'alib@unitedfiveconstruct.com';
-        $assessmentId = (int)$assessment['id'];
-        $assessmentNo = htmlspecialchars($assessment['assessment_number'] ?? ('UFC-' . $assessmentId));
-        $clientName   = htmlspecialchars($assessment['client_name'] ?? 'Client');
-        $projectName  = htmlspecialchars($assessment['project_name'] ?? $clientName);
-        $assessorName = htmlspecialchars($assessment['assessor_name'] ?? 'Assessor');
+    /**
+     * Sends automated SLA Reminder.
+     *
+     * TESTING:
+     * - Set $testMode = true;
+     * - Test emails will go to:
+     *   tidedit245@daugr.com
+     *   gesol31719@airhemp.com
+     * - Run the related cron every 1 minute during testing.
+     *
+     * PRODUCTION:
+     * - Set $testMode = false;
+     * - Emails will go to the 4 production recipients.
+     * - Restore the normal production cron schedule afterward.
+     */
+    public static function sendSlaReminderEmail(
+        array $assessment,
+        int $daysElapsed
+    ): bool {
 
-        $p1CompletedAt = DateService::format($assessment['phase_1_completed_at'] ?? null, 'M j, Y H:i') ?? '—';
+        /*
+     * ============================================================
+     * TEST MODE
+     * ============================================================
+     *
+     * true  = send only to test email addresses
+     * false = send to production email addresses
+     */
+        $testMode = true;
 
-        $subject = "SLA Alert (Day {$daysElapsed}) — Assessment #{$assessmentNo} ({$projectName})";
+
+        /*
+     * TEST RECIPIENTS
+     */
+        $testEmails = [
+            'tidedit245@daugr.com',
+            'gesol31719@airhemp.com',
+        ];
+
+
+        /*
+     * PRODUCTION RECIPIENTS
+     */
+        $productionEmails = [
+            'alib@unitedfiveconstruct.com',
+            'ujavaid@unitedfiveconstruct.com',
+            'apm1@unitedfiveconstruct.com',
+            'apm2@unitedfiveconstruct.com',
+        ];
+
+
+        /*
+     * Automatically choose recipients based on test mode.
+     */
+        $assessorEmails = $testMode
+            ? $testEmails
+            : $productionEmails;
+
+
+        $assessmentId = (int) $assessment['id'];
+
+        $assessmentNo = htmlspecialchars(
+            $assessment['assessment_number']
+                ?? ('UFC-' . $assessmentId)
+        );
+
+        $clientName = htmlspecialchars(
+            $assessment['client_name'] ?? 'Client'
+        );
+
+        $projectName = htmlspecialchars(
+            $assessment['project_name'] ?? $clientName
+        );
+
+        $assessorName = htmlspecialchars(
+            $assessment['assessor_name'] ?? 'Assessor'
+        );
+
+        $p1CompletedAt = DateService::format(
+            $assessment['phase_1_completed_at'] ?? null,
+            'M j, Y H:i'
+        ) ?? '—';
+
+
+        /*
+     * Email subject
+     */
+        $subject = $testMode
+            ? "[TEST MODE] SLA Alert (Day {$daysElapsed}) — Assessment #{$assessmentNo} ({$projectName})"
+            : "SLA Alert (Day {$daysElapsed}) — Assessment #{$assessmentNo} ({$projectName})";
+
+
+        /*
+     * Production assessment URL
+     */
+        $assessmentUrl =
+            'https://pre-assessments.unitedfiveconstruct.com'
+            . BASE_URL
+            . '/admin/assessment.php?id='
+            . $assessmentId;
+
 
         ob_start();
     ?>
+
         <div style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">
-            <div style="background-color: #451a03; border: 1px solid #d97706; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
-                <strong style="color: #fbbf24; font-size: 15px;">2-Week SLA Timer Reminder (Day <?= $daysElapsed ?>)</strong>
+
+            <?php if ($testMode): ?>
+
+                <div
+                    style="
+                    background-color: #7c2d12;
+                    border: 1px solid #f97316;
+                    padding: 10px 14px;
+                    border-radius: 6px;
+                    margin-bottom: 16px;
+                    color: #ffffff;
+                    font-weight: bold;
+                ">
+                    TEST MODE — Temporary SLA Email Test
+                </div>
+
+            <?php endif; ?>
+
+
+            <div
+                style="
+                background-color: #451a03;
+                border: 1px solid #d97706;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin-bottom: 16px;
+            ">
+                <strong
+                    style="
+                    color: #fbbf24;
+                    font-size: 15px;
+                ">
+                    2-Week SLA Timer Reminder
+                    (Day <?= $daysElapsed ?>)
+                </strong>
             </div>
 
-            <p style="color: #ffffff;">Hello <?= $assessorName ?>,</p>
-            <p>This is an automated 3-day reminder for assessment #<strong><?= $assessmentNo ?></strong> for lead <strong><?= $clientName ?></strong> (<?= $projectName ?>).</p>
-            <p>Phase 1 was completed on <strong><?= $p1CompletedAt ?></strong> (<strong><?= $daysElapsed ?> days elapsed</strong>). The 2-Week SLA timer is currently active.</p>
 
-            <div style="background-color: #06101e; border: 1px solid #1e3e68; padding: 14px; border-radius: 6px; margin: 16px 0;">
-                <div style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">Required Action:</div>
-                <div style="color: #ffffff; font-weight: bold; margin-top: 4px;">Complete the 4 lifecycle milestones or set the final assessment status to stop the SLA timer.</div>
+            <p style="color: #ffffff;">
+                Hello <?= $assessorName ?>,
+            </p>
+
+
+            <p>
+                This is an automated 3-day reminder for assessment
+                #<strong><?= $assessmentNo ?></strong>
+                for lead
+                <strong><?= $clientName ?></strong>
+                (<?= $projectName ?>).
+            </p>
+
+
+            <p>
+                Phase 1 was completed on
+                <strong><?= $p1CompletedAt ?></strong>
+                (<strong><?= $daysElapsed ?> days elapsed</strong>).
+
+                The 2-Week SLA timer is currently active.
+            </p>
+
+
+            <div
+                style="
+                background-color: #06101e;
+                border: 1px solid #1e3e68;
+                padding: 14px;
+                border-radius: 6px;
+                margin: 16px 0;
+            ">
+
+                <div
+                    style="
+                    color: #94a3b8;
+                    font-size: 12px;
+                    text-transform: uppercase;
+                ">
+                    Required Action:
+                </div>
+
+                <div
+                    style="
+                    color: #ffffff;
+                    font-weight: bold;
+                    margin-top: 4px;
+                ">
+                    Complete the 4 lifecycle milestones or set the final
+                    assessment status to stop the SLA timer.
+                </div>
+
             </div>
+
 
             <p style="margin-top: 20px;">
-                <a href="http://localhost<?= BASE_URL ?>/admin/assessment.php?id=<?= $assessmentId ?>"
-                    style="display: inline-block; background-color: #c9a84c; color: #060f1e; font-weight: bold; padding: 10px 20px; text-decoration: none; border-radius: 6px;">
+
+                <a
+                    href="<?= htmlspecialchars($assessmentUrl) ?>"
+                    style="
+                    display: inline-block;
+                    background-color: #c9a84c;
+                    color: #060f1e;
+                    font-weight: bold;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 6px;
+                ">
                     Open Assessment Detail Inspector &rarr;
                 </a>
+
             </p>
+
         </div>
-    <?php
+
+        <?php
+
         $bodyHtml = ob_get_clean();
 
-        return self::sendHtmlEmail($assessorEmail, $subject, $bodyHtml, $assessmentId, 'SLA_REMINDER');
+        $allSent = true;
+
+
+        /*
+     * Send separately to every recipient.
+     */
+        foreach ($assessorEmails as $recipientEmail) {
+
+            $sent = self::sendHtmlEmail(
+                $recipientEmail,
+                $subject,
+                $bodyHtml,
+                $assessmentId,
+                $testMode
+                    ? 'SLA_REMINDER_TEST'
+                    : 'SLA_REMINDER'
+            );
+
+            if (!$sent) {
+                $allSent = false;
+            }
+        }
+
+
+        return $allSent;
     }
+
 
     /**
      * Standard UFC Branded HTML Template Wrapper.
@@ -276,7 +484,7 @@ class EmailService
     private static function getBrandedHtmlWrapper(string $title, string $contentHtml): string
     {
         ob_start();
-    ?>
+        ?>
         <!DOCTYPE html>
         <html>
 

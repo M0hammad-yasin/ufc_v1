@@ -1,4 +1,8 @@
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
 /**
  * cron/sla_reminders.php
  * ─────────────────────────────────────────────────────────────────────────────
@@ -61,7 +65,8 @@ foreach ($assessments as $ass) {
     $daysElapsed = (int)$tracker['days_elapsed'];
 
     // Auto send email after every 3 days (e.g. Day 3, 6, 9, 12, 15...)
-    if ($daysElapsed > 0 && ($daysElapsed % 3 === 0)) {
+    // if ($daysElapsed > 0 && ($daysElapsed % 3 === 0)) {
+    if (true) {
         // Check if an SLA reminder was already sent today for this assessment
         $checkStmt = $pdo->prepare("
             SELECT COUNT(*) FROM `email_logs`
