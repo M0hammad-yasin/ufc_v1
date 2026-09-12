@@ -15,11 +15,11 @@ function generateRequirementsLetterData(int $assessmentId, ?int $phaseNumber = n
         throw new InvalidArgumentException("Assessment not found");
     }
 
-    // Query questions and answers from client-facing phases (Phases 1, 2, 3 — internal Phase 4 excluded)
-    // If a specific client phase (1, 2, or 3) is passed, filter to that phase; otherwise query all first 3 phases.
+    // Query questions and answers from all phases where the question is CLIENT_FACING.
+    // If a specific phase number is passed, filter to that phase only; otherwise include all phases.
     $params = [$assessmentId];
-    $phaseCondition = "p.phase_number IN (1, 2, 3)";
-    if ($phaseNumber !== null && $phaseNumber >= 1 && $phaseNumber <= 3) {
+    $phaseCondition = "1=1"; // no phase-number restriction — visibility on questions controls what is client-facing
+    if ($phaseNumber !== null) {
         $phaseCondition = "p.phase_number = ?";
         $params[] = $phaseNumber;
     }
@@ -199,9 +199,9 @@ function generateRequirementsLetterPdfHtml(array $letterData, ?int $selectedPhas
     $groupedByStatus = $letterData['grouped_by_status'];
     $counts = $letterData['counts'];
     $dateIssued = date('F j, Y');
-    $phaseText = ($selectedPhase && $selectedPhase >= 1 && $selectedPhase <= 3) 
-        ? "Phase {$selectedPhase}" 
-        : "Client-Facing (Phases 1–3)";
+    $phaseText = $selectedPhase
+        ? "Phase {$selectedPhase}"
+        : "All Client-Facing Phases";
 
     ob_start();
     ?>

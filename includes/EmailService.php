@@ -157,13 +157,27 @@ class EmailService
         }
 
         $phaseChoiceStr = (string)$phaseChoice;
-        $phaseNumbers = ($phaseChoiceStr === 'all' || empty($phaseChoiceStr) || $phaseChoiceStr === '0') 
-            ? [1, 2, 3, 4] 
-            : [min(4, max(1, (int)$phaseChoiceStr))];
 
-        $inClause = implode(',', array_map('intval', $phaseNumbers));
-        $stmtP = $pdo->query("SELECT * FROM phases WHERE phase_number IN ($inClause) ORDER BY phase_number ASC");
+        if ($phaseChoiceStr === 'all' || empty($phaseChoiceStr) || $phaseChoiceStr === '0') {
+            // Fetch only phases that have at least one answered question for this assessment
+            $stmtP = $pdo->prepare("
+                SELECT DISTINCT p.*
+                FROM phases p
+                JOIN questions q ON q.phase_id = p.id
+                JOIN assessment_answers aa ON aa.question_id = q.id
+                WHERE aa.assessment_id = ?
+                  AND aa.answer_value IS NOT NULL
+                  AND aa.answer_value != ''
+                ORDER BY p.phase_number ASC
+            ");
+            $stmtP->execute([$assessmentId]);
+        } else {
+            $phaseNum = max(1, (int)$phaseChoiceStr);
+            $stmtP = $pdo->prepare("SELECT * FROM phases WHERE phase_number = ? LIMIT 1");
+            $stmtP->execute([$phaseNum]);
+        }
         $phases = $stmtP->fetchAll(PDO::FETCH_ASSOC);
+        $phaseNumbers = array_column($phases, 'phase_number');
 
         $phaseData = [];
         foreach ($phases as $p) {
@@ -423,7 +437,7 @@ class EmailService
                                             <!-- Recorded Answer -->
                                             <div style="margin-top: 5px; color: #cbd5e1; font-size: 11.5px;">
                                                 <span style="color: #94a3b8;">Recorded Response:</span>
-                                                <strong style="color: #ffffff;"><?= htmlspecialchars($q['answer_value'] ?: '—') ?></strong>
+                                                <strong style="color: #ffffff;"><?= htmlspecialchars(formatAnswerValue($q['answer_value'] ?? null, $q)) ?></strong>
                                                 <?php if ($q['score'] !== null): ?>
                                                     <span style="color: #64748b; margin-left: 6px;">(Score: <?= number_format((float)$q['score'], 2) ?> / <?= number_format((float)$q['points_possible'], 2) ?>)</span>
                                                 <?php endif; ?>

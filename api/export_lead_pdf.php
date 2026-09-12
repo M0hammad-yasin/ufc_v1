@@ -56,14 +56,14 @@ if (!$data) {
 
 $assessment   = $data['assessment'];
 $phaseData    = $data['phase_data'];
-$phaseLabel   = ($data['phase_choice'] === 'all') ? 'All Phases (1–4)' : 'Phase ' . implode(', ', $data['phase_numbers']);
-$clientName   = htmlspecialchars($assessment['client_name'] ?? '—');
-$clientEmail  = htmlspecialchars($assessment['client_email'] ?? '—');
-$clientPhone  = htmlspecialchars($assessment['client_phone'] ?? '—');
+$phaseLabel   = ($data['phase_choice'] === 'all') ? 'All Phases (1-4)' : 'Phase ' . implode(', ', $data['phase_numbers']);
+$clientName   = htmlspecialchars($assessment['client_name'] ?? '-');
+$clientEmail  = htmlspecialchars($assessment['client_email'] ?? '-');
+$clientPhone  = htmlspecialchars($assessment['client_phone'] ?? '-');
 $projectName  = htmlspecialchars($assessment['project_name'] ?? $clientName);
-$projectAddress = htmlspecialchars($assessment['project_address'] ?? '—');
-$projectType  = htmlspecialchars($assessment['project_type'] ?? '—');
-$budget       = !empty($assessment['estimated_budget']) ? '$' . number_format((float)$assessment['estimated_budget'], 2) : '—';
+$projectAddress = htmlspecialchars($assessment['project_address'] ?? '-');
+$projectType  = htmlspecialchars($assessment['project_type'] ?? '-');
+$budget       = !empty($assessment['estimated_budget']) ? '$' . number_format((float)$assessment['estimated_budget'], 2) : 'N/A';
 $assessmentNo = htmlspecialchars($assessment['assessment_number'] ?? ('UFC-' . $assessmentId));
 $status       = htmlspecialchars(str_replace('_', ' ', $assessment['status'] ?? 'IN PROGRESS'));
 $assessor     = htmlspecialchars($assessment['assessor_name'] ?? 'Staff Assessor');
@@ -292,10 +292,10 @@ ob_start();
                                 </td>
                                 <td style="width: 30%; text-align: right;">
                                     <?php if ((int)$r['red_count'] > 0): ?>
-                                        <span style="color: #dc2626; font-weight: bold; margin-right: 6pt;">● <?= (int)$r['red_count'] ?> RED</span>
+                                        <span style="color: #dc2626; font-weight: bold; margin-right: 6pt;">* <?= (int)$r['red_count'] ?> RED</span>
                                     <?php endif; ?>
                                     <?php if ((int)$r['amber_count'] > 0): ?>
-                                        <span style="color: #d97706; font-weight: bold;">● <?= (int)$r['amber_count'] ?> AMBER</span>
+                                        <span style="color: #d97706; font-weight: bold;">* <?= (int)$r['amber_count'] ?> AMBER</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -334,7 +334,7 @@ ob_start();
 
                             <div style="margin-top: 3pt; color: #334155; font-size: 8pt;">
                                 <span style="color: #64748b;">Answer:</span> 
-                                <strong><?= htmlspecialchars($q['answer_value'] ?: 'Not Answered / Skipped') ?></strong>
+                                <strong><?= htmlspecialchars(formatAnswerValue($q['answer_value'] ?? null, $q)) ?></strong>
                                 <?php if ($q['score'] !== null): ?>
                                     <span style="color: #64748b; margin-left: 6pt;">(Score: <?= number_format((float)$q['score'], 2) ?> / <?= number_format((float)$q['points_possible'], 2) ?>)</span>
                                 <?php endif; ?>
