@@ -8,8 +8,8 @@ if (isLoggedIn()) {
 }
 
 $error = '';
-$emailValue = $_POST['email'] ?? 'assessor@ufc.com';
-$passwordValue = $_POST['password'] ?? 'assessor123';
+$emailValue = $_POST['email'] ?? '';
+$passwordValue = $_POST['password'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -27,6 +27,7 @@ $pageTitle = 'Sign In — UFC Client Pre-Assessment';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="h-full">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,12 +40,13 @@ $pageTitle = 'Sign In — UFC Client Pre-Assessment';
     <!-- Existing CSS for specific variables / classes -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
+
 <body class="bg-[#060f1e] text-white antialiased min-h-screen font-sans">
     <div class="min-h-screen flex flex-col lg:flex-row">
 
         <!-- Brand panel -->
-        <div class="hidden lg:flex relative lg:w-[40%] flex-col justify-center items-center p-14 bg-[#0d1f3c] border-r border-[#1a3a5c] overflow-hidden" 
-             style="background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 48px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 48px);">
+        <div class="hidden lg:flex relative lg:w-[40%] flex-col justify-center items-center p-14 bg-[#0d1f3c] border-r border-[#1a3a5c] overflow-hidden"
+            style="background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 48px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 48px);">
             <div class="max-w-[380px] w-full">
                 <div class="text-[11px] font-bold tracking-[0.3em] text-[#8b0000] mb-4 uppercase">
                     UNITED FIVE CONSTRUCTION — CONFIDENTIAL
@@ -100,8 +102,8 @@ $pageTitle = 'Sign In — UFC Client Pre-Assessment';
                                 value="<?= htmlspecialchars($passwordValue) ?>"
                                 placeholder="Enter your password"
                                 required>
-                            <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#6b7280] hover:text-white cursor-pointer text-[14px] p-2 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c]" 
-                                    data-toggle-target="password" aria-label="Show password">
+                            <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 bg-transparent border-none text-[#6b7280] hover:text-white cursor-pointer text-[14px] p-2 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a84c]"
+                                data-toggle-target="password" aria-label="Show password">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
@@ -132,4 +134,5 @@ $pageTitle = 'Sign In — UFC Client Pre-Assessment';
         });
     </script>
 </body>
+
 </html>
